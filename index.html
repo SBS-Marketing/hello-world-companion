@@ -3,10 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <title>Chat Moderator Dashboard</title>
+    <meta name="description" content="Chat Moderator Dashboard" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: #0a0c14; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: #0f1117; }
+      ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 2px; }
+      @keyframes pulse-glow { 0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; } 50% { opacity: 0.7; box-shadow: 0 0 14px currentColor; } }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes slide-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      .step-active { animation: pulse-glow 1.8s ease-in-out infinite; }
+      .card-new { animation: slide-in 0.3s ease-out; }
+      .content-area { flex: 1; padding: 14px clamp(10px, 2vw, 32px); max-width: min(100%, 1800px); width: 100%; margin: 0 auto; }
+      .cards-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+      @media (min-width: 1300px) { .cards-grid { grid-template-columns: 1fr 1fr; } }
+      @media (min-width: 2000px) { .cards-grid { grid-template-columns: 1fr 1fr 1fr; } }
+      .log-preview { max-width: clamp(180px, 35vw, 700px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
 
     <!-- TODO: Update og:title to match your application name -->
     <meta property="og:title" content="Lovable App" />
