@@ -286,23 +286,17 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
         {/* Notaus */}
         <button
           onClick={handleNotaus}
-          disabled={!anyRunning && notausStep === 0}
           style={{
             minWidth: 80,
-            background: notausStep === 1 ? '#7f1d1d' : anyRunning ? '#1f1215' : 'var(--bg2)',
-            border: `2px solid ${notausStep === 1 ? '#ef4444' : anyRunning ? '#ef444466' : 'var(--border)'}`,
+            background: notausStep === 1 ? '#7f1d1d' : '#1f1215',
+            border: `2px solid ${notausStep === 1 ? '#ef4444' : '#ef444466'}`,
             borderRadius: 12, padding: '10px 14px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-            cursor: anyRunning ? 'pointer' : 'default',
-            fontFamily: 'inherit', transition: 'all 0.15s',
-            animation: notausStep === 1 ? 'pulse-notaus 0.5s ease-in-out infinite alternate' : 'none',
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
           }}
         >
           <span style={{ fontSize: 20 }}>🛑</span>
-          <span style={{
-            fontSize: 11, fontWeight: 800,
-            color: notausStep === 1 ? '#ef4444' : anyRunning ? '#fca5a5' : 'var(--text3)',
-          }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: notausStep === 1 ? '#ef4444' : '#fca5a5' }}>
             {notausStep === 1 ? 'Sicher?' : 'Notaus'}
           </span>
         </button>
