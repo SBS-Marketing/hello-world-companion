@@ -41,4 +41,6 @@ export interface Stats {
   model: string
   avg_ai_score?: number | null
   avg_response_time?: number | null
+  monthly_messages?: number
+  monthly_target?: number
 }

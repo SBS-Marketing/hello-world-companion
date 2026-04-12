@@ -66,9 +66,35 @@ export function StatsBar({ stats, connected }: Props) {
         </>
       )}
 
+      {stats.monthly_target != null && stats.monthly_messages != null && (
+        <>
+          <Divider />
+          <MonthlyCounter current={stats.monthly_messages} target={stats.monthly_target} />
+        </>
+      )}
+
       <div style={{ marginLeft: 'auto', fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 6 }}>
         <span>Modell:</span>
         <span style={{ color: '#94a3b8', fontWeight: 600 }}>{modelLabel}</span>
+      </div>
+    </div>
+  )
+}
+
+function MonthlyCounter({ current, target }: { current: number; target: number }) {
+  const pct = Math.min(100, Math.round((current / target) * 100))
+  const expected = Math.round((target / 30) * new Date().getDate())
+  const onTrack = current >= expected * 0.9
+  const done = current >= target
+  const color = done ? '#22c55e' : onTrack ? '#60a5fa' : '#f59e0b'
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 120 }}>
+      <span style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Monatsziel</span>
+      <span style={{ fontSize: 16, fontWeight: 700, color, lineHeight: 1 }}>
+        {done ? '🎉' : onTrack ? '✓' : '⚠'} {current.toLocaleString('de-DE')}/{target.toLocaleString('de-DE')}
+      </span>
+      <div style={{ background: '#1f2937', borderRadius: 999, height: 4, width: 120 }}>
+        <div style={{ background: color, borderRadius: 999, height: 4, width: `${pct}%`, transition: 'width 0.3s' }} />
       </div>
     </div>
   )

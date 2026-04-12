@@ -46,6 +46,16 @@ const statusLabel: Record<BotStatus, string> = {
 export function BotOverviewPage() {
   const [data, setData] = useState<BotOverviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [resetting, setResetting] = useState<Record<string, boolean>>({})
+
+  const handleReset = async (botId: string) => {
+    setResetting(prev => ({ ...prev, [botId]: true }))
+    try {
+      await fetch(`${API}/agent-reset/${botId}`, { method: 'POST' })
+    } finally {
+      setTimeout(() => setResetting(prev => ({ ...prev, [botId]: false })), 2000)
+    }
+  }
 
   useEffect(() => {
     const load = () => {
@@ -93,11 +103,27 @@ export function BotOverviewPage() {
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#e5eefb' }}>{bot.name}</div>
                 <div style={{ fontSize: 11, color: '#4b5563', marginTop: 4 }}>ID: {bot.id}</div>
               </div>
-              <div style={{
-                padding: '6px 10px', borderRadius: 999, border: `1px solid ${statusColor[bot.status]}55`,
-                background: `${statusColor[bot.status]}18`, color: statusColor[bot.status], fontWeight: 700, fontSize: 12,
-              }}>
-                {statusLabel[bot.status]}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  padding: '6px 10px', borderRadius: 999, border: `1px solid ${statusColor[bot.status]}55`,
+                  background: `${statusColor[bot.status]}18`, color: statusColor[bot.status], fontWeight: 700, fontSize: 12,
+                }}>
+                  {statusLabel[bot.status]}
+                </div>
+                <button
+                  onClick={() => handleReset(bot.id)}
+                  disabled={resetting[bot.id]}
+                  title="Agent-State zurücksetzen"
+                  style={{
+                    background: resetting[bot.id] ? '#1f2937' : '#172032',
+                    border: '1px solid #1e3a5f', borderRadius: 8,
+                    color: resetting[bot.id] ? '#6b7280' : '#60a5fa',
+                    fontSize: 14, cursor: resetting[bot.id] ? 'not-allowed' : 'pointer',
+                    padding: '6px 10px', fontWeight: 700,
+                  }}
+                >
+                  {resetting[bot.id] ? '…' : '🔄'}
+                </button>
               </div>
             </div>
 
