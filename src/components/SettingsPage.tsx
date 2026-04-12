@@ -4,6 +4,12 @@ import { BOTS, getBotUrl, setBotUrl } from '../config/bots'
 
 const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
 
+interface LoginLog {
+  id: string
+  username: string | null
+  logged_in_at: string
+}
+
 interface Settings {
   platform: string
   auto_mode: boolean
@@ -168,6 +174,9 @@ export function SettingsPage() {
           </Row>
         )}
       </Section>
+
+      {/* Login Logs */}
+      <LoginLogsSection />
 
       {/* Backend URLs */}
       <BackendUrlsSection />
