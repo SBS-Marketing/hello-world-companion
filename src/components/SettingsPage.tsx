@@ -4,6 +4,12 @@ import { BOTS, getBotUrl, setBotUrl } from '../config/bots'
 
 const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
 
+interface LoginLog {
+  id: string
+  username: string | null
+  logged_in_at: string
+}
+
 interface Settings {
   platform: string
   auto_mode: boolean
@@ -169,6 +175,9 @@ export function SettingsPage() {
         )}
       </Section>
 
+      {/* Login Logs */}
+      <LoginLogsSection />
+
       {/* Backend URLs */}
       <BackendUrlsSection />
 
@@ -196,6 +205,41 @@ function lengthLabel(v: number) {
 
 const sliderStyle: React.CSSProperties = {
   width: '100%', accentColor: '#3b82f6', cursor: 'pointer',
+}
+
+// ─── Login Logs ───────────────────────────────────────────────────────────────
+function LoginLogsSection() {
+  const [logs, setLogs] = useState<LoginLog[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('login_logs').select('*').order('logged_in_at', { ascending: false }).limit(50)
+      .then(({ data }) => { setLogs((data as LoginLog[]) || []); setLoading(false) })
+  }, [])
+
+  return (
+    <Section title="📋 Login-Protokoll">
+      {loading ? (
+        <div style={{ fontSize: 12, color: '#6b7280' }}>Lade…</div>
+      ) : logs.length === 0 ? (
+        <div style={{ fontSize: 12, color: '#6b7280' }}>Keine Einträge</div>
+      ) : (
+        <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {logs.map(log => (
+            <div key={log.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              fontSize: 12, padding: '6px 10px', background: '#0a0f1a', borderRadius: 6,
+            }}>
+              <span style={{ color: '#93c5fd', fontWeight: 600 }}>{log.username || '–'}</span>
+              <span style={{ color: '#6b7280', fontSize: 11 }}>
+                {new Date(log.logged_in_at).toLocaleString('de-DE')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Section>
+  )
 }
 
 // ─── Backend URL Config ───────────────────────────────────────────────────────

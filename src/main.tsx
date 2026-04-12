@@ -12,9 +12,16 @@ function Root() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setSession(session);
         setLoading(false);
+        if (event === 'SIGNED_IN' && session) {
+          const username = session.user.user_metadata?.display_name || session.user.email || 'unknown';
+          supabase.from('login_logs').insert({
+            user_id: session.user.id,
+            username,
+          }).then(() => {});
+        }
       }
     );
     supabase.auth.getSession().then(({ data: { session } }) => {
