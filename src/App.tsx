@@ -45,6 +45,13 @@ export default function App() {
   // ─── Stats for overview (from first connected bot or null) ──────────────────
   const overviewStats = sa.stats ?? fpc.stats ?? chb.stats
 
+  // ─── Monthly totals (sum across all active bots) ────────────────────────────
+  const allStats = [sa.stats, fpc.stats, chb.stats].filter(Boolean)
+  const monthlyTotal = allStats.some(s => s!.monthly_messages != null)
+    ? allStats.reduce((sum, s) => sum + (s!.monthly_messages ?? 0), 0)
+    : null
+  const monthlyTarget = allStats.find(s => s!.monthly_target != null)?.monthly_target ?? null
+
   const handleFeedOpen = (botId?: string) => {
     if (botId) {
       setFeedBotId(botId)
@@ -96,8 +103,8 @@ export default function App() {
         <div style={{ flex: 1 }} />
 
         {/* Monthly chip from SA stats (primary active bot) */}
-        {(sa.stats?.monthly_messages != null && sa.stats?.monthly_target != null) && (
-          <MonthlyChip cur={sa.stats.monthly_messages} tgt={sa.stats.monthly_target} />
+        {monthlyTotal != null && monthlyTarget != null && (
+          <MonthlyChip cur={monthlyTotal} tgt={monthlyTarget} />
         )}
 
         <StatChip
@@ -112,7 +119,10 @@ export default function App() {
 
         {/* Overview */}
         <PageSlot visible={page === 'overview'}>
-          <BotOverviewPage stats={overviewStats ?? undefined} />
+          <BotOverviewPage
+            stats={overviewStats ?? undefined}
+            monthlyTotal={monthlyTotal ?? undefined}
+          />
         </PageSlot>
 
         {/* Chats — multi-bot panels */}

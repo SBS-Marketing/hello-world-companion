@@ -46,9 +46,10 @@ const statusLabel: Record<BotStatus, string> = {
 
 interface Props {
   stats?: Stats
+  monthlyTotal?: number
 }
 
-export function BotOverviewPage({ stats }: Props) {
+export function BotOverviewPage({ stats, monthlyTotal }: Props) {
   const [data, setData] = useState<BotOverviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState<Record<string, boolean>>({})
@@ -86,15 +87,17 @@ export function BotOverviewPage({ stats }: Props) {
     return <CenteredText>Bot-Übersicht nicht erreichbar</CenteredText>
   }
 
-  // Monthly progress derived values
-  const monthly = stats?.monthly_messages != null && stats?.monthly_target != null
-    ? { cur: stats.monthly_messages, tgt: stats.monthly_target } : null
+  // Monthly: use summed total from App if available, otherwise fall back to single-bot stats
+  const monthlyCur = monthlyTotal ?? stats?.monthly_messages ?? null
+  const monthlyTgt = stats?.monthly_target ?? null
 
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 16px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* ── Monthly Progress ─────────────────────────────────────────────────── */}
-      {monthly && <MonthlyCard cur={monthly.cur} tgt={monthly.tgt} />}
+      {monthlyCur != null && monthlyTgt != null && (
+        <MonthlyCard cur={monthlyCur} tgt={monthlyTgt} />
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
         <Kpi label="Bots online" value={`${data.summary.online}/${data.summary.total}`} color="#22c55e" />
