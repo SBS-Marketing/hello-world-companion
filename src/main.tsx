@@ -1,5 +1,5 @@
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { useState, useEffect } from "react";
 import { supabase } from "./integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import App from "./App.tsx";
@@ -28,4 +28,8 @@ function Root() {
   return session ? <App /> : <LoginPage />;
 }
 
-createRoot(document.getElementById("root")!).render(<Root />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <Root />
+  </React.StrictMode>
+);
