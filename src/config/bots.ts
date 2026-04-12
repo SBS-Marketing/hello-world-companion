@@ -13,7 +13,7 @@ export const BOTS: BotConfig[] = [
     label: 'SexyAffair',
     icon: '💋',
     color: '#f472b6',
-    defaultUrl: 'http://localhost:8002',
+    defaultUrl: 'https://roman-coupon-feeling-sunny.trycloudflare.com',
     storageKey: 'botUrl_sa',
   },
   {
@@ -21,7 +21,7 @@ export const BOTS: BotConfig[] = [
     label: 'FPC',
     icon: '🎯',
     color: '#a78bfa',
-    defaultUrl: 'http://localhost:8003',
+    defaultUrl: 'https://enables-loves-ceremony-baseball.trycloudflare.com',
     storageKey: 'botUrl_fpc',
   },
   {
@@ -29,7 +29,7 @@ export const BOTS: BotConfig[] = [
     label: 'ChatHomeBase',
     icon: '🏠',
     color: '#60a5fa',
-    defaultUrl: (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000',
+    defaultUrl: 'https://lambda-peoples-examine-explanation.trycloudflare.com',
     storageKey: 'botUrl_chb',
   },
 ]
