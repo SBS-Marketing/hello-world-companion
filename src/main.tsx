@@ -1,5 +1,31 @@
 import { createRoot } from "react-dom/client";
+import { useState, useEffect } from "react";
+import { supabase } from "./integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import App from "./App.tsx";
+import LoginPage from "./pages/LoginPage.tsx";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(<App />);
+function Root() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setLoading(false);
+      }
+    );
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) return null;
+  return session ? <App /> : <LoginPage />;
+}
+
+createRoot(document.getElementById("root")!).render(<Root />);
