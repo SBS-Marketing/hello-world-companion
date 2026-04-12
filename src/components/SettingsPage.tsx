@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '@/integrations/supabase/client'
 import { BOTS, getBotUrl, setBotUrl } from '../config/bots'
 
 const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
