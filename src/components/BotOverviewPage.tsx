@@ -159,6 +159,7 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
   const [notausStep, setNotausStep] = useState<0 | 1>(0)
   const [startingBot, setStartingBot] = useState<string | null>(null)
+  const [notausConfirmed, setNotausConfirmed] = useState(false)
 
   const getBotUrl = (botId: string) =>
     botUrls[botId] || `https://${botId}.sbs-marketing.de`
@@ -203,14 +204,15 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
       setTimeout(() => setNotausStep(0), 4000)
       return
     }
-    // Step 2: stop all running agents
+    // Step 2: stop all agents on all backends
     setNotausStep(0)
-    const running = Object.entries(agentStatus).filter(([, s]) => s === 'running').map(([id]) => id)
-    await Promise.all(running.map(id => {
+    await Promise.all(['sa', 'fpc', 'chb'].map(id => {
       const url = getBotUrl(id)
       return fetch(`${url}/agent/stop/${id}`, { method: 'POST' }).catch(() => {})
     }))
     await refreshAgentStatus()
+    setNotausConfirmed(true)
+    setTimeout(() => setNotausConfirmed(false), 4000)
   }
 
   useEffect(() => {
@@ -317,6 +319,24 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
         <Kpi label="Aktive Cases" value={String(data.summary.active_conversations)} color="#f59e0b" />
         <Kpi label="Pending" value={String(data.summary.pending)} color="#fbbf24" />
       </div>
+
+      {/* ── Notaus Bestätigung ───────────────────────────────────────────────── */}
+      {notausConfirmed && (
+        <div style={{
+          position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+          background: '#1a0a0a', border: '1px solid #ef4444',
+          borderRadius: 14, padding: '14px 24px', zIndex: 1000,
+          display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 8px 32px #ef444433',
+          animation: 'slideUp 0.2s ease-out',
+        }}>
+          <span style={{ fontSize: 20 }}>🛑</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: '#ef4444' }}>Notaus aktiviert</div>
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>Alle Agents werden gestoppt & Browser geschlossen</div>
+          </div>
+        </div>
+      )}
 
       {/* ── Startup Popup ────────────────────────────────────────────────────── */}
       {startingBot && BOT_META[startingBot] && (
