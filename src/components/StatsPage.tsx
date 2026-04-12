@@ -50,19 +50,29 @@ export function StatsPage({ botUrls }: { botUrls: Record<string, string> }) {
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
+  const [currentPeriod, setCurrentPeriod] = useState<Record<string, number>>({})
 
   const chbUrl = botUrls['chb'] || 'https://chb.sbs-marketing.de'
 
   useEffect(() => {
-    Promise.all([
+    const fetchAll = () => Promise.all([
       fetch(`${chbUrl}/stats/monthly`).then(r => r.json()).catch(() => ({ months: [] })),
       fetch(`${chbUrl}/agent/status`).then(r => r.json()).catch(() => null),
-    ]).then(([monthly, status]) => {
-      setMonths(monthly.months || [])
+      // Fetch current-period monthly_messages per bot (reset-date filtered)
+      ...BOTS.map(b => {
+        const url = botUrls[b.id] || `https://${b.id}.sbs-marketing.de`
+        return fetch(`${url}/stats`).then(r => r.json()).then(d => ({ id: b.id, val: d.monthly_messages ?? 0 })).catch(() => ({ id: b.id, val: 0 }))
+      }),
+    ]).then(([monthly, status, ...botStats]) => {
+      setMonths((monthly as any).months || [])
       setAgentStatus(status)
+      const period: Record<string, number> = {}
+      ;(botStats as { id: string; val: number }[]).forEach(b => { period[b.id] = b.val })
+      setCurrentPeriod(period)
       setLoading(false)
     })
 
+    fetchAll()
     const iv = setInterval(() => {
       fetch(`${chbUrl}/agent/status`).then(r => r.json()).then(setAgentStatus).catch(() => {})
     }, 5000)
@@ -82,8 +92,8 @@ export function StatsPage({ botUrls }: { botUrls: Record<string, string> }) {
     }
   }
 
-  // Compute totals
-  const totals = months.reduce(
+  // All-time totals (for charts reference)
+  const allTimeTotals = months.reduce(
     (acc, m) => ({ sa: acc.sa + m.sa, fpc: acc.fpc + m.fpc, chb: acc.chb + m.chb }),
     { sa: 0, fpc: 0, chb: 0 }
   )
@@ -140,20 +150,48 @@ export function StatsPage({ botUrls }: { botUrls: Record<string, string> }) {
         </div>
       </section>
 
-      {/* ── Monatliche Gesamtübersicht ───────────────────────────────────────── */}
+      {/* ── Aktueller Zeitraum ───────────────────────────────────────────────── */}
       <section>
         <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>
-          Nachrichten gesamt
+          Dieser Monat
+        </h2>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {BOTS.map(bot => {
+            const cur = currentPeriod[bot.id] ?? 0
+            const pct = Math.min(100, Math.round((cur / 1500) * 100))
+            return (
+              <div key={bot.id} style={{
+                flex: 1, background: 'var(--bg2)', border: `1px solid ${bot.color}33`,
+                borderRadius: 10, padding: '10px 12px', textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 10, color: bot.color, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{bot.label}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>
+                  {cur.toLocaleString('de-DE')}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>/ 1.500</div>
+                <div style={{ background: 'var(--border)', borderRadius: 999, height: 3, marginTop: 6 }}>
+                  <div style={{ background: bot.color, borderRadius: 999, height: 3, width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* ── All-time ─────────────────────────────────────────────────────────── */}
+      <section>
+        <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>
+          Gesamt (alle Zeit)
         </h2>
         <div style={{ display: 'flex', gap: 10 }}>
           {BOTS.map(bot => (
             <div key={bot.id} style={{
-              flex: 1, background: 'var(--bg2)', border: `1px solid ${bot.color}33`,
+              flex: 1, background: 'var(--bg2)', border: `1px solid ${bot.color}22`,
               borderRadius: 10, padding: '10px 12px', textAlign: 'center',
             }}>
               <div style={{ fontSize: 10, color: bot.color, fontWeight: 700, textTransform: 'uppercase' }}>{bot.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginTop: 2 }}>
-                {totals[bot.id as keyof typeof totals].toLocaleString('de-DE')}
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text3)', marginTop: 2 }}>
+                {allTimeTotals[bot.id as keyof typeof allTimeTotals].toLocaleString('de-DE')}
               </div>
             </div>
           ))}
