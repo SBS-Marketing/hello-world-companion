@@ -160,6 +160,7 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
   const [notausStep, setNotausStep] = useState<0 | 1>(0)
   const [startingBot, setStartingBot] = useState<string | null>(null)
   const [notausConfirmed, setNotausConfirmed] = useState(false)
+  const [reloadingBot, setReloadingBot] = useState<string | null>(null)
 
   const getBotUrl = (botId: string) =>
     botUrls[botId] || `https://${botId}.sbs-marketing.de`
@@ -178,6 +179,16 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
       await fetch(`${API}/agent-reset/${botId}`, { method: 'POST' })
     } finally {
       setTimeout(() => setResetting(prev => ({ ...prev, [botId]: false })), 2000)
+    }
+  }
+
+  const handleReload = async (botId: string) => {
+    const url = getBotUrl(botId)
+    setReloadingBot(botId)
+    try {
+      await fetch(`${url}/agent/reload/${botId}`, { method: 'POST' })
+    } finally {
+      setTimeout(() => setReloadingBot(null), 3000)
     }
   }
 
@@ -369,6 +380,21 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
                 }}>
                   {statusLabel[bot.status]}
                 </div>
+                <button
+                  onClick={() => handleReload(bot.id)}
+                  disabled={reloadingBot === bot.id}
+                  title="Code live neu laden (Browser bleibt offen)"
+                  style={{
+                    background: reloadingBot === bot.id ? '#2d1f0a' : '#1a1a0a',
+                    border: `1px solid ${reloadingBot === bot.id ? '#f59e0b' : '#2d2a00'}`,
+                    borderRadius: 8,
+                    color: reloadingBot === bot.id ? '#f59e0b' : '#fbbf24',
+                    fontSize: 13, cursor: reloadingBot === bot.id ? 'wait' : 'pointer',
+                    padding: '6px 10px', fontWeight: 700,
+                  }}
+                >
+                  {reloadingBot === bot.id ? '…' : '🔥'}
+                </button>
                 <button
                   onClick={() => handleReset(bot.id)}
                   disabled={resetting[bot.id]}
