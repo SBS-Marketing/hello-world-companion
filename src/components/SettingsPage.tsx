@@ -64,6 +64,17 @@ export function SettingsPage() {
   return (
     <div style={{ maxWidth: 620, margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+      {/* Logout */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={() => supabase.auth.signOut()} style={{
+          background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8,
+          padding: '6px 14px', fontSize: 12, color: 'var(--red)', fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          Abmelden
+        </button>
+      </div>
+
       {/* Plattform */}
       <Section title="🌐 Plattform">
         <div style={{ display: 'flex', gap: 10 }}>
