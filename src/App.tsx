@@ -174,7 +174,7 @@ export default function App() {
 
         {/* Overview */}
         <PageSlot visible={page === 'overview'}>
-          <BotOverviewPage />
+          <BotOverviewPage stats={stats} />
         </PageSlot>
 
         {/* Chats */}

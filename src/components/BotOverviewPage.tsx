@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { Stats } from '../types'
 
 const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
 
@@ -43,7 +44,11 @@ const statusLabel: Record<BotStatus, string> = {
   offline: 'Offline',
 }
 
-export function BotOverviewPage() {
+interface Props {
+  stats?: Stats
+}
+
+export function BotOverviewPage({ stats }: Props) {
   const [data, setData] = useState<BotOverviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState<Record<string, boolean>>({})
@@ -81,8 +86,16 @@ export function BotOverviewPage() {
     return <CenteredText>Bot-Übersicht nicht erreichbar</CenteredText>
   }
 
+  // Monthly progress derived values
+  const monthly = stats?.monthly_messages != null && stats?.monthly_target != null
+    ? { cur: stats.monthly_messages, tgt: stats.monthly_target } : null
+
   return (
-    <div style={{ maxWidth: 1180, margin: '0 auto', padding: '22px 16px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 16px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+      {/* ── Monthly Progress ─────────────────────────────────────────────────── */}
+      {monthly && <MonthlyCard cur={monthly.cur} tgt={monthly.tgt} />}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
         <Kpi label="Bots online" value={`${data.summary.online}/${data.summary.total}`} color="#22c55e" />
         <Kpi label="Fehler 10m" value={String(data.summary.errors_10m)} color={data.summary.errors_10m > 0 ? '#ef4444' : '#93c5fd'} />
@@ -97,6 +110,9 @@ export function BotOverviewPage() {
           <div key={bot.id} style={{
             background: '#0f1623', border: '1px solid #1a2335', borderRadius: 16,
             padding: 16, boxShadow: '0 6px 24px #00000033', display: 'flex', flexDirection: 'column', gap: 14,
+            opacity: bot.status === 'offline' ? 0.38 : 1,
+            filter: bot.status === 'offline' ? 'grayscale(0.6)' : 'none',
+            transition: 'opacity 0.3s',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
@@ -205,4 +221,75 @@ function formatDateTime(value: string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   return date.toLocaleString('de-DE')
+}
+
+function MonthlyCard({ cur, tgt }: { cur: number; tgt: number }) {
+  const today      = new Date().getDate()
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
+  const remaining  = daysInMonth - today
+  const pct        = Math.min(100, Math.round((cur / tgt) * 100))
+  const expected   = Math.round((tgt / daysInMonth) * today)
+  const dailyNeeded = remaining > 0 ? Math.ceil((tgt - cur) / remaining) : 0
+  const onTrack    = cur >= expected * 0.9
+  const done       = cur >= tgt
+  const color      = done ? '#22c55e' : onTrack ? '#3b82f6' : '#f59e0b'
+  const deficit    = expected - cur
+
+  return (
+    <div style={{
+      background: '#0f1623', border: `1px solid ${color}33`,
+      borderRadius: 16, padding: '16px 20px',
+      display: 'flex', flexDirection: 'column', gap: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+            Monatsziel {new Date().toLocaleString('de-DE', { month: 'long' })}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>
+              {cur.toLocaleString('de-DE')}
+            </span>
+            <span style={{ fontSize: 14, color: '#475569' }}>/ {tgt.toLocaleString('de-DE')} Nachrichten</span>
+            <span style={{ fontSize: 18, marginLeft: 4 }}>{done ? '🎉' : onTrack ? '✓' : '⚠️'}</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <StatMini label="Täglich nötig" value={dailyNeeded.toLocaleString('de-DE')} color={dailyNeeded > 200 ? '#f59e0b' : '#60a5fa'} />
+          <StatMini label="Noch heute" value={onTrack ? 'Im Plan' : `−${deficit.toLocaleString('de-DE')}`} color={onTrack ? '#22c55e' : '#f59e0b'} />
+          <StatMini label="Tage übrig" value={String(remaining)} color="#94a3b8" />
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ position: 'relative', background: '#1a2030', borderRadius: 999, height: 8 }}>
+        {/* Expected marker */}
+        <div style={{
+          position: 'absolute', left: `${Math.min(100, Math.round((expected / tgt) * 100))}%`,
+          top: -4, bottom: -4, width: 2, background: '#334155', borderRadius: 1,
+          transform: 'translateX(-50%)',
+        }} />
+        <div style={{
+          background: color, borderRadius: 999, height: 8,
+          width: `${pct}%`, transition: 'width 0.4s',
+          boxShadow: `0 0 8px ${color}66`,
+        }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#374151' }}>
+        <span>{pct}% erreicht</span>
+        <span style={{ color: '#475569' }}>
+          Soll heute: {expected.toLocaleString('de-DE')} · Erwartet: {Math.round(tgt / daysInMonth).toLocaleString('de-DE')}/Tag
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function StatMini({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+      <span style={{ fontSize: 10, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: 16, fontWeight: 800, color, lineHeight: 1 }}>{value}</span>
+    </div>
+  )
 }
