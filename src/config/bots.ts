@@ -13,7 +13,7 @@ export const BOTS: BotConfig[] = [
     label: 'SexyAffair',
     icon: '💋',
     color: '#f472b6',
-    defaultUrl: 'https://roman-coupon-feeling-sunny.trycloudflare.com',
+    defaultUrl: 'https://sa.sbs-marketing.de',
     storageKey: 'botUrl_sa',
   },
   {
@@ -21,7 +21,7 @@ export const BOTS: BotConfig[] = [
     label: 'FPC',
     icon: '🎯',
     color: '#a78bfa',
-    defaultUrl: 'https://enables-loves-ceremony-baseball.trycloudflare.com',
+    defaultUrl: 'https://fpc.sbs-marketing.de',
     storageKey: 'botUrl_fpc',
   },
   {
@@ -29,7 +29,7 @@ export const BOTS: BotConfig[] = [
     label: 'ChatHomeBase',
     icon: '🏠',
     color: '#60a5fa',
-    defaultUrl: 'https://lambda-peoples-examine-explanation.trycloudflare.com',
+    defaultUrl: 'https://chb.sbs-marketing.de',
     storageKey: 'botUrl_chb',
   },
 ]
