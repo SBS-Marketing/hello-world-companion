@@ -15,12 +15,14 @@ interface WsMessage {
   message?: string
   level?: string
   ts?: string
+  agent?: string
 }
 
 export interface LogEntry {
   ts: string
   message: string
   level: string
+  agent?: string
 }
 
 export function useWebSocket(
@@ -85,7 +87,7 @@ export function useWebSocket(
             if (msg.conversation_id) onSent(msg.conversation_id)
             break
           case 'agent_log':
-            if (msg.message) onAgentLog({ ts: msg.ts ?? '', message: msg.message, level: msg.level ?? 'info' })
+            if (msg.message) onAgentLog({ ts: msg.ts ?? '', message: msg.message, level: msg.level ?? 'info', agent: msg.agent })
             break
         }
       } catch (e) {

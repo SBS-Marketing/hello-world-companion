@@ -1,12 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useWebSocket } from './hooks/useWebSocket'
 import type { LogEntry } from './hooks/useWebSocket'
-import { StatsBar } from './components/StatsBar'
-import { MilestoneProgress } from './components/MilestoneProgress'
 import { ConversationCard } from './components/ConversationCard'
 import { SettingsPage } from './components/SettingsPage'
-import { AnalyticsPage } from './components/AnalyticsPage'
 import { BotOverviewPage } from './components/BotOverviewPage'
+import { LiveFeedPage } from './components/LiveFeedPage'
 import type { Conversation, Stats } from './types'
 
 const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
@@ -21,53 +19,26 @@ const DEFAULT_STATS: Stats = {
   model: 'grok',
 }
 
-const MAX_LOGS = 100
+const MAX_LOGS = 200
 const COUNTDOWN_SECONDS = 10
 
-// ─── Log-Level Farben ───────────────────────────────────────────────────────
-const logColor = (level: string) => {
-  if (level === 'error')   return '#f87171'
-  if (level === 'warning') return '#fbbf24'
-  return '#4ade80'
-}
-
-// ─── Log-Icons ──────────────────────────────────────────────────────────────
-const logIcon = (msg: string) => {
-  if (msg.includes('❌') || msg.includes('Fehler')) return '❌'
-  if (msg.includes('✅') || msg.includes('korrekt')) return '✅'
-  if (msg.includes('📝') || msg.includes('Textarea')) return '📝'
-  if (msg.includes('💬') || msg.includes('Nachricht')) return '💬'
-  if (msg.includes('🤖') || msg.includes('Grok'))     return '🤖'
-  if (msg.includes('🔍') || msg.includes('Scan'))     return '🔍'
-  if (msg.includes('⚡') || msg.includes('LLM'))      return '⚡'
-  return '›'
-}
+type Page = 'overview' | 'chats' | 'feed' | 'settings'
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [stats,         setStats]         = useState<Stats>(DEFAULT_STATS)
   const [filter,        setFilter]        = useState<'pending' | 'all'>('pending')
   const [logs,          setLogs]          = useState<LogEntry[]>([])
-  const [showLogs,      setShowLogs]      = useState(false)
-  const [page,          setPage]          = useState<'overview' | 'chats' | 'analytics' | 'settings'>('overview')
-  const logEndRef = useRef<HTMLDivElement>(null)
+  const [page,          setPage]          = useState<Page>('overview')
+  const [errorCount,    setErrorCount]    = useState(0)
 
-  // Countdown state: conv_id → remaining seconds
-  const [countdowns, setCountdowns] = useState<Record<string, number>>({})
   const countdownRefs = useRef<Record<string, ReturnType<typeof setInterval>>>({})
+  const [countdowns, setCountdowns] = useState<Record<string, number>>({})
 
-  // ─── Countdown Helpers ────────────────────────────────────────────────────
+  // ─── Countdown ─────────────────────────────────────────────────────────────
   const clearCountdown = useCallback((id: string) => {
-    if (countdownRefs.current[id]) {
-      clearInterval(countdownRefs.current[id])
-      delete countdownRefs.current[id]
-    }
-    setCountdowns(prev => {
-      if (!(id in prev)) return prev
-      const next = { ...prev }
-      delete next[id]
-      return next
-    })
+    if (countdownRefs.current[id]) { clearInterval(countdownRefs.current[id]); delete countdownRefs.current[id] }
+    setCountdowns(prev => { if (!(id in prev)) return prev; const n = { ...prev }; delete n[id]; return n })
   }, [])
 
   const startCountdown = useCallback((id: string) => {
@@ -78,10 +49,9 @@ export default function App() {
         const cur = prev[id]
         if (cur === undefined) { clearInterval(interval); return prev }
         if (cur <= 1) {
-          clearInterval(interval)
-          delete countdownRefs.current[id]
+          clearInterval(interval); delete countdownRefs.current[id]
           fetch(`${API}/approve/${id}`, { method: 'POST' })
-          const next = { ...prev }; delete next[id]; return next
+          const n = { ...prev }; delete n[id]; return n
         }
         return { ...prev, [id]: cur - 1 }
       })
@@ -91,36 +61,35 @@ export default function App() {
 
   useEffect(() => () => { Object.values(countdownRefs.current).forEach(clearInterval) }, [])
 
-  // ─── WebSocket Callbacks ──────────────────────────────────────────────────
+  // ─── WebSocket Callbacks ────────────────────────────────────────────────────
   const handleNewConv = useCallback((conv: Conversation) => {
     setConversations(prev => {
       const exists = prev.find(c => c.id === conv.id)
-      if (exists) return prev.map(c => c.id === conv.id ? conv : c)
-      return [conv, ...prev]
+      return exists ? prev.map(c => c.id === conv.id ? conv : c) : [conv, ...prev]
     })
   }, [])
 
-  const handleTyped     = useCallback((id: string) => {
+  const handleTyped    = useCallback((id: string) => {
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'typed' as const } : c))
     startCountdown(id)
   }, [startCountdown])
 
-  const handleApproved  = useCallback((id: string) => {
+  const handleApproved = useCallback((id: string) => {
     clearCountdown(id)
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'approved' as const } : c))
   }, [clearCountdown])
 
-  const handleEdited    = useCallback((id: string, text: string) => {
+  const handleEdited   = useCallback((id: string, text: string) => {
     clearCountdown(id)
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'edited' as const, final_text: text } : c))
   }, [clearCountdown])
 
-  const handleRejected  = useCallback((id: string) => {
+  const handleRejected = useCallback((id: string) => {
     clearCountdown(id)
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'rejected' as const } : c))
   }, [clearCountdown])
 
-  const handleSent      = useCallback((id: string) => {
+  const handleSent     = useCallback((id: string) => {
     clearCountdown(id)
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'sent' as const } : c))
   }, [clearCountdown])
@@ -129,211 +98,296 @@ export default function App() {
   const handleInitState = useCallback((convs: Conversation[], s: Stats) => {
     setConversations(convs); setStats(s)
   }, [])
-  const handleAgentLog  = useCallback((entry: LogEntry) => {
+  const handleAgentLog = useCallback((entry: LogEntry) => {
     setLogs(prev => [...prev.slice(-(MAX_LOGS - 1)), entry])
+    if (entry.level === 'error') setErrorCount(n => n + 1)
   }, [])
-
-  useEffect(() => {
-    if (showLogs) logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [logs, showLogs])
 
   const { connected } = useWebSocket(
     handleNewConv, handleTyped, handleApproved, handleEdited,
     handleRejected, handleSent, handleStats, handleInitState, handleAgentLog,
   )
 
-  // ─── API Calls ────────────────────────────────────────────────────────────
-  const approve = async (id: string) => { clearCountdown(id); await fetch(`${API}/approve/${id}`, { method: 'POST' }) }
-  const edit    = async (id: string, text: string) => {
+  // ─── API Calls ──────────────────────────────────────────────────────────────
+  const approve  = async (id: string) => { clearCountdown(id); await fetch(`${API}/approve/${id}`, { method: 'POST' }) }
+  const edit     = async (id: string, text: string) => {
     clearCountdown(id)
     await fetch(`${API}/edit/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
   }
-  const reject  = async (id: string) => { clearCountdown(id); await fetch(`${API}/reject/${id}`, { method: 'POST' }) }
+  const reject   = async (id: string) => { clearCountdown(id); await fetch(`${API}/reject/${id}`, { method: 'POST' }) }
   const thumbsUp   = async (id: string) => { clearCountdown(id); await fetch(`${API}/approve/${id}`, { method: 'POST' }) }
-  const handleStop = async (id: string) => { clearCountdown(id); await fetch(`${API}/reject/${id}`, { method: 'POST' }) }
   const thumbsDown = async (id: string) => { clearCountdown(id); await fetch(`${API}/reject/${id}`, { method: 'POST' }) }
+  const handleStop = async (id: string) => { clearCountdown(id); await fetch(`${API}/reject/${id}`, { method: 'POST' }) }
   const cancelCountdownForEdit = (id: string) => clearCountdown(id)
 
-  // ─── Filter ───────────────────────────────────────────────────────────────
+  // ─── Derived ────────────────────────────────────────────────────────────────
   const filtered     = filter === 'pending'
     ? conversations.filter(c => c.status === 'pending' || c.status === 'typed')
     : conversations
   const pendingCount = conversations.filter(c => c.status === 'pending' || c.status === 'typed').length
-  const lastLog      = logs[logs.length - 1]
+
+  const handleFeedOpen = () => { setPage('feed'); setErrorCount(0) }
+
+  // ─── Monthly helper ─────────────────────────────────────────────────────────
+  const monthly = stats.monthly_messages != null && stats.monthly_target != null
+    ? { cur: stats.monthly_messages, tgt: stats.monthly_target } : null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0c14', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      height: '100dvh', background: 'var(--bg)',
+      overflow: 'hidden',
+    }}>
 
-      {/* ── Stats + Milestone ─────────────────────────────────────────── */}
-      <StatsBar stats={stats} connected={connected} />
-      <MilestoneProgress milestone={stats.next_milestone} />
-
-      {/* ── Agent Live-Feed (kompakt, aufklappbar) ────────────────────── */}
-      <div style={{ borderBottom: '1px solid #131820' }}>
-        <button
-          onClick={() => setShowLogs(v => !v)}
-          style={{
-            background: 'transparent', border: 'none',
-            color: '#374151', padding: '5px 18px',
-            fontSize: 11, cursor: 'pointer', width: '100%',
-            textAlign: 'left', fontFamily: 'monospace',
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}
-        >
-          <span style={{ color: '#1f2937' }}>{showLogs ? '▼' : '▶'}</span>
-          <span>Agent Live-Feed</span>
-          {logs.length > 0 && (
-            <span style={{
-              background: '#1f2937', color: '#4b5563',
-              borderRadius: 999, padding: '0 6px', fontSize: 10,
-            }}>
-              {logs.length}
-            </span>
-          )}
-          {/* Letzte Log-Zeile als Vorschau wenn eingeklappt */}
-          {!showLogs && lastLog && (
-            <span className="log-preview" style={{
-              color: logColor(lastLog.level),
-              fontSize: 10, fontFamily: 'monospace',
-              marginLeft: 4,
-            }}>
-              {lastLog.ts} {lastLog.message}
-            </span>
-          )}
-        </button>
-
-        {showLogs && (
-          <div style={{
-            background: '#070910', fontFamily: 'monospace', fontSize: 11,
-            maxHeight: 180, overflowY: 'auto', padding: '6px 18px 8px',
-            borderTop: '1px solid #131820',
-          }}>
-            {logs.length === 0
-              ? <span style={{ color: '#1f2937' }}>Warte auf Agent-Logs…</span>
-              : logs.map((l, i) => (
-                <div key={i} style={{
-                  color: logColor(l.level),
-                  lineHeight: 1.6, display: 'flex', gap: 6,
-                }}>
-                  <span style={{ color: '#2d3748', flexShrink: 0 }}>{l.ts}</span>
-                  <span style={{ color: '#374151', flexShrink: 0 }}>{logIcon(l.message)}</span>
-                  <span>{l.message}</span>
-                </div>
-              ))
-            }
-            <div ref={logEndRef} />
-          </div>
-        )}
-      </div>
-
-      {/* ── Navigation ─────────────────────────────────────────────────── */}
-      <div style={{
-        padding: '10px 18px',
-        borderBottom: '1px solid #131820',
-        display: 'flex', alignItems: 'center', gap: 8,
-        background: '#0a0c14',
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <header style={{
+        flexShrink: 0,
+        background: 'var(--bg2)',
+        borderBottom: '1px solid var(--border)',
+        padding: '10px 16px',
+        display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <Tab active={page === 'overview'} onClick={() => setPage('overview')}>
-          🧭 Übersicht
-        </Tab>
-        <Tab active={page === 'chats' && filter === 'pending'} onClick={() => { setPage('chats'); setFilter('pending') }}>
-          💬 Chats
-          {pendingCount > 0 && (
-            <span style={{
-              background: '#fbbf24', color: '#0a0c14',
-              borderRadius: 999, padding: '0 6px',
-              fontSize: 10, fontWeight: 800, marginLeft: 6,
-            }}>
-              {pendingCount}
-            </span>
-          )}
-        </Tab>
-        <Tab active={page === 'chats' && filter === 'all'} onClick={() => { setPage('chats'); setFilter('all') }}>
-          Alle
-          <span style={{
-            background: '#1f2937', color: '#6b7280',
-            borderRadius: 999, padding: '0 6px',
-            fontSize: 10, fontWeight: 600, marginLeft: 6,
-          }}>
-            {conversations.length}
-          </span>
-        </Tab>
+        <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          💬 Agent
+        </span>
+
+        {/* Connection dot */}
+        <div style={{
+          width: 7, height: 7, borderRadius: '50%',
+          background: connected ? 'var(--green)' : 'var(--red)',
+          boxShadow: connected ? '0 0 6px var(--green)' : 'none',
+          flexShrink: 0,
+        }} className={connected ? 'dot-pulse' : ''} />
+
         <div style={{ flex: 1 }} />
-        <Tab active={page === 'analytics'} onClick={() => setPage('analytics')}>
-          📊 Statistiken
-        </Tab>
-        <Tab active={page === 'settings'} onClick={() => setPage('settings')}>
-          ⚙️ Einstellungen
-        </Tab>
+
+        {/* Stats chips */}
+        {monthly && (
+          <MonthlyChip cur={monthly.cur} tgt={monthly.tgt} />
+        )}
+        <StatChip label="Heute" value={stats.today_messages} color="var(--text2)" />
+        <StatChip label="Pending" value={stats.pending_count} color={stats.pending_count > 0 ? 'var(--yellow)' : 'var(--text2)'} />
+      </header>
+
+      {/* ── Page Content ────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+
+        {/* Overview */}
+        <PageSlot visible={page === 'overview'}>
+          <BotOverviewPage />
+        </PageSlot>
+
+        {/* Chats */}
+        <PageSlot visible={page === 'chats'}>
+          <div style={{ padding: '12px 12px 0' }}>
+            {/* Filter toggle */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <FilterBtn active={filter === 'pending'} onClick={() => setFilter('pending')}>
+                Ausstehend {pendingCount > 0 && <Badge>{pendingCount}</Badge>}
+              </FilterBtn>
+              <FilterBtn active={filter === 'all'} onClick={() => setFilter('all')}>
+                Alle <Badge muted>{conversations.length}</Badge>
+              </FilterBtn>
+            </div>
+          </div>
+
+          <div style={{ overflowY: 'auto', height: 'calc(100% - 60px)', padding: '0 12px 80px' }}>
+            {filtered.length === 0 ? (
+              <EmptyState
+                icon={filter === 'pending' ? '✅' : '💬'}
+                title={filter === 'pending' ? 'Keine ausstehenden Chats' : 'Noch keine Chats'}
+                sub={filter === 'pending' ? 'Agent scannt alle 5 Sekunden…' : 'Warte auf eingehende Nachrichten'}
+              />
+            ) : filtered.map(conv => (
+              <ConversationCard
+                key={conv.id}
+                conv={conv}
+                countdown={countdowns[conv.id]}
+                onApprove={approve}
+                onEdit={edit}
+                onReject={reject}
+                onThumbsUp={thumbsUp}
+                onThumbsDown={thumbsDown}
+                onStop={handleStop}
+                onCancelCountdown={cancelCountdownForEdit}
+              />
+            ))}
+          </div>
+        </PageSlot>
+
+        {/* Live Feed */}
+        <PageSlot visible={page === 'feed'}>
+          <LiveFeedPage logs={logs} />
+        </PageSlot>
+
+        {/* Settings */}
+        <PageSlot visible={page === 'settings'}>
+          <SettingsPage />
+        </PageSlot>
       </div>
 
-      {/* ── Inhalt ─────────────────────────────────────────────────────── */}
-      {page === 'overview' ? (
-        <BotOverviewPage />
-      ) : page === 'settings' ? (
-        <SettingsPage />
-      ) : page === 'analytics' ? (
-        <AnalyticsPage />
-      ) : (
-        <div className="content-area">
-          {filtered.length === 0 ? (
-            <div style={{
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              padding: '80px 20px', color: '#2d3748',
-            }}>
-              <div style={{ fontSize: 44, marginBottom: 14 }}>
-                {filter === 'pending' ? '✅' : '💬'}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#374151' }}>
-                {filter === 'pending' ? 'Keine ausstehenden Chats' : 'Noch keine Chats'}
-              </div>
-              <div style={{ fontSize: 12, color: '#1f2937', marginTop: 6 }}>
-                {filter === 'pending'
-                  ? 'Agent scannt alle 5 Sekunden…'
-                  : 'Warte auf eingehende Nachrichten'}
-              </div>
-            </div>
-          ) : (
-            <div className="cards-grid">
-              {filtered.map(conv => (
-                <ConversationCard
-                  key={conv.id}
-                  conv={conv}
-                  countdown={countdowns[conv.id]}
-                  onApprove={approve}
-                  onEdit={edit}
-                  onReject={reject}
-                  onThumbsUp={thumbsUp}
-                  onThumbsDown={thumbsDown}
-                  onStop={handleStop}
-                  onCancelCountdown={cancelCountdownForEdit}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ── Bottom Navigation ────────────────────────────────────────────────── */}
+      <nav style={{
+        flexShrink: 0,
+        background: 'var(--bg2)',
+        borderTop: '1px solid var(--border)',
+        display: 'flex',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}>
+        <NavTab icon="🧭" label="Übersicht" active={page === 'overview'} onClick={() => setPage('overview')} />
+        <NavTab
+          icon="💬" label="Chats" active={page === 'chats'}
+          onClick={() => setPage('chats')} badge={pendingCount || undefined}
+        />
+        <NavTab
+          icon="📡" label="Live Feed" active={page === 'feed'}
+          onClick={handleFeedOpen} badge={errorCount > 0 ? errorCount : undefined} badgeRed
+        />
+        <NavTab icon="⚙️" label="Einstellungen" active={page === 'settings'} onClick={() => setPage('settings')} />
+      </nav>
     </div>
   )
 }
 
-// ─── Tab Button ────────────────────────────────────────────────────────────
-function Tab({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+// ─── PageSlot ──────────────────────────────────────────────────────────────────
+function PageSlot({ visible, children }: { visible: boolean; children: React.ReactNode }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      overflowY: 'auto',
+      display: visible ? 'block' : 'none',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+// ─── NavTab ────────────────────────────────────────────────────────────────────
+function NavTab({ icon, label, active, onClick, badge, badgeRed }: {
+  icon: string; label: string; active: boolean
+  onClick: () => void; badge?: number; badgeRed?: boolean
+}) {
   return (
     <button
       onClick={onClick}
       style={{
-        background: active ? '#1e2d47' : 'transparent',
-        color: active ? '#93c5fd' : '#4b5563',
-        border: `1px solid ${active ? '#1e3a5f' : '#1a2030'}`,
-        borderRadius: 8, padding: '5px 14px',
-        fontSize: 12, fontWeight: 600, cursor: 'pointer',
-        display: 'flex', alignItems: 'center',
+        flex: 1, border: 'none', background: 'transparent',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '10px 4px 8px', cursor: 'pointer', position: 'relative',
+        color: active ? 'var(--blue)' : 'var(--text3)',
+        fontFamily: 'inherit', transition: 'color 0.15s',
+        gap: 3,
+      }}
+    >
+      {badge != null && badge > 0 && (
+        <span style={{
+          position: 'absolute', top: 6, right: '50%', transform: 'translateX(12px)',
+          background: badgeRed ? 'var(--red)' : 'var(--yellow)',
+          color: badgeRed ? '#fff' : '#0a0c14',
+          borderRadius: 999, fontSize: 9, fontWeight: 800,
+          padding: '1px 5px', minWidth: 16, textAlign: 'center',
+          lineHeight: '14px',
+        }}>
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+      <span style={{ fontSize: 20, lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontSize: 10, fontWeight: active ? 700 : 400, letterSpacing: '0.02em' }}>{label}</span>
+      {active && (
+        <span style={{
+          position: 'absolute', bottom: 0, left: '20%', right: '20%',
+          height: 2, background: 'var(--blue)', borderRadius: 999,
+        }} />
+      )}
+    </button>
+  )
+}
+
+// ─── FilterBtn ────────────────────────────────────────────────────────────────
+function FilterBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? '#1e2d47' : 'var(--bg3)',
+        color: active ? '#93c5fd' : 'var(--text2)',
+        border: `1px solid ${active ? '#1e3a5f' : 'var(--border)'}`,
+        borderRadius: 20, padding: '6px 14px',
+        fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 6,
         fontFamily: 'inherit', transition: 'all 0.15s',
       }}
     >
       {children}
     </button>
+  )
+}
+
+// ─── Badge ────────────────────────────────────────────────────────────────────
+function Badge({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
+  return (
+    <span style={{
+      background: muted ? 'var(--bg3)' : 'var(--yellow)',
+      color: muted ? 'var(--text3)' : '#0a0c14',
+      borderRadius: 999, padding: '0 6px',
+      fontSize: 11, fontWeight: 800,
+    }}>
+      {children}
+    </span>
+  )
+}
+
+// ─── StatChip ─────────────────────────────────────────────────────────────────
+function StatChip({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+      lineHeight: 1,
+    }}>
+      <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+      <span style={{ fontSize: 15, fontWeight: 800, color }}>{value.toLocaleString('de-DE')}</span>
+    </div>
+  )
+}
+
+// ─── MonthlyChip ──────────────────────────────────────────────────────────────
+function MonthlyChip({ cur, tgt }: { cur: number; tgt: number }) {
+  const pct      = Math.min(100, Math.round((cur / tgt) * 100))
+  const expected = Math.round((tgt / 30) * new Date().getDate())
+  const onTrack  = cur >= expected * 0.9
+  const done     = cur >= tgt
+  const color    = done ? 'var(--green)' : onTrack ? 'var(--blue)' : 'var(--yellow)'
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 3,
+      padding: '4px 10px',
+      background: 'var(--bg3)', border: '1px solid var(--border)',
+      borderRadius: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Monat</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color }}>
+          {done ? '🎉' : onTrack ? '✓' : '⚠'} {cur.toLocaleString('de-DE')}/{tgt.toLocaleString('de-DE')}
+        </span>
+      </div>
+      <div style={{ background: 'var(--border)', borderRadius: 999, height: 3 }}>
+        <div style={{ background: color, borderRadius: 999, height: 3, width: `${pct}%`, transition: 'width 0.4s' }} />
+      </div>
+    </div>
+  )
+}
+
+// ─── EmptyState ───────────────────────────────────────────────────────────────
+function EmptyState({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', padding: '80px 20px', color: 'var(--text3)',
+    }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>{icon}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 13, color: 'var(--text3)' }}>{sub}</div>
+    </div>
   )
 }
