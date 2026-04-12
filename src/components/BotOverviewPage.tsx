@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Stats } from '../types'
 
-const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
+const DEFAULT_API = 'https://chb.sbs-marketing.de'
 
 type BotStatus = 'online' | 'offline' | 'idle'
 
@@ -49,9 +49,11 @@ interface BotMonthly { bot: { id: string; label: string; color: string }; cur: n
 interface Props {
   stats?: Stats
   botMonthly?: BotMonthly[]
+  apiUrl?: string
 }
 
-export function BotOverviewPage({ stats, botMonthly }: Props) {
+export function BotOverviewPage({ stats, botMonthly, apiUrl }: Props) {
+  const API = apiUrl || DEFAULT_API
   const [data, setData] = useState<BotOverviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState<Record<string, boolean>>({})

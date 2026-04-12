@@ -5,8 +5,9 @@ import { BotChatsPanel } from './components/BotChatsPanel'
 import { BotOverviewPage } from './components/BotOverviewPage'
 import { LiveFeedPage } from './components/LiveFeedPage'
 import { SettingsPage } from './components/SettingsPage'
+import { StatsPage } from './components/StatsPage'
 
-type Page = 'overview' | 'chats' | 'feed' | 'settings'
+type Page = 'overview' | 'chats' | 'feed' | 'stats' | 'settings'
 
 // ─── Top-level multi-bot state ─────────────────────────────────────────────────
 // Each bot connects independently; this component just wires them together.
@@ -122,6 +123,7 @@ export default function App() {
           <BotOverviewPage
             stats={overviewStats ?? undefined}
             botMonthly={botMonthly}
+            apiUrl={botUrls['chb']}
           />
         </PageSlot>
 
@@ -245,6 +247,11 @@ export default function App() {
           </div>
         </PageSlot>
 
+        {/* Stats */}
+        <PageSlot visible={page === 'stats'}>
+          <StatsPage botUrls={botUrls} />
+        </PageSlot>
+
         {/* Settings */}
         <PageSlot visible={page === 'settings'}>
           <SettingsPage />
@@ -269,6 +276,7 @@ export default function App() {
           onClick={() => handleFeedOpen()}
           badge={totalErrors > 0 ? totalErrors : undefined} badgeRed
         />
+        <NavTab icon="📊" label="Statistik" active={page === 'stats'} onClick={() => setPage('stats')} />
         <NavTab icon="⚙️" label="Einstellungen" active={page === 'settings'} onClick={() => setPage('settings')} />
       </nav>
     </div>
