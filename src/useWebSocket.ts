@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
-import type { Conversation, Stats } from '../types'
+import type { Conversation, Stats } from './types'
 
 const WS_URL = 'ws://localhost:8000/ws'
 const RECONNECT_DELAY = 3000
