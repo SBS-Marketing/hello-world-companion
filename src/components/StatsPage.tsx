@@ -92,8 +92,8 @@ export function StatsPage({ botUrls }: { botUrls: Record<string, string> }) {
     }
   }
 
-  // All-time totals (for charts reference)
-  const allTimeTotals = months.reduce(
+  // Totals since epoch (sum of all returned months)
+  const epochTotals = months.reduce(
     (acc, m) => ({ sa: acc.sa + m.sa, fpc: acc.fpc + m.fpc, chb: acc.chb + m.chb }),
     { sa: 0, fpc: 0, chb: 0 }
   )
@@ -175,26 +175,6 @@ export function StatsPage({ botUrls }: { botUrls: Record<string, string> }) {
               </div>
             )
           })}
-        </div>
-      </section>
-
-      {/* ── All-time ─────────────────────────────────────────────────────────── */}
-      <section>
-        <h2 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>
-          Gesamt (alle Zeit)
-        </h2>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {BOTS.map(bot => (
-            <div key={bot.id} style={{
-              flex: 1, background: 'var(--bg2)', border: `1px solid ${bot.color}22`,
-              borderRadius: 10, padding: '10px 12px', textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 10, color: bot.color, fontWeight: 700, textTransform: 'uppercase' }}>{bot.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text3)', marginTop: 2 }}>
-                {allTimeTotals[bot.id as keyof typeof allTimeTotals].toLocaleString('de-DE')}
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
