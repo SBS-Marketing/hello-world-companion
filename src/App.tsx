@@ -45,12 +45,12 @@ export default function App() {
   // ─── Stats for overview (from first connected bot or null) ──────────────────
   const overviewStats = sa.stats ?? fpc.stats ?? chb.stats
 
-  // ─── Monthly totals (sum across all active bots) ────────────────────────────
-  const allStats = [sa.stats, fpc.stats, chb.stats].filter(Boolean)
-  const monthlyTotal = allStats.some(s => s!.monthly_messages != null)
-    ? allStats.reduce((sum, s) => sum + (s!.monthly_messages ?? 0), 0)
-    : null
-  const monthlyTarget = allStats.find(s => s!.monthly_target != null)?.monthly_target ?? null
+  // ─── Monthly per-bot stats ──────────────────────────────────────────────────
+  const botMonthly = BOTS.map(b => ({
+    bot: b,
+    cur: botStates[b.id].stats?.monthly_messages ?? null,
+    tgt: botStates[b.id].stats?.monthly_target ?? null,
+  })).filter(m => m.cur != null && m.tgt != null) as { bot: typeof BOTS[0]; cur: number; tgt: number }[]
 
   const handleFeedOpen = (botId?: string) => {
     if (botId) {
@@ -102,10 +102,10 @@ export default function App() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Monthly chip from SA stats (primary active bot) */}
-        {monthlyTotal != null && monthlyTarget != null && (
-          <MonthlyChip cur={monthlyTotal} tgt={monthlyTarget} />
-        )}
+        {/* Per-bot monthly chips */}
+        {botMonthly.map(m => (
+          <MonthlyChip key={m.bot.id} cur={m.cur} tgt={m.tgt} label={m.bot.id.toUpperCase()} color={m.bot.color} />
+        ))}
 
         <StatChip
           label="Pending"
@@ -121,7 +121,7 @@ export default function App() {
         <PageSlot visible={page === 'overview'}>
           <BotOverviewPage
             stats={overviewStats ?? undefined}
-            monthlyTotal={monthlyTotal ?? undefined}
+            botMonthly={botMonthly}
           />
         </PageSlot>
 
@@ -347,26 +347,27 @@ function StatChip({ label, value, color }: { label: string; value: number; color
 }
 
 // ─── MonthlyChip ─────────────────────────────────────────────────────────────
-function MonthlyChip({ cur, tgt }: { cur: number; tgt: number }) {
+function MonthlyChip({ cur, tgt, label, color: botColor }: { cur: number; tgt: number; label?: string; color?: string }) {
   const pct      = Math.min(100, Math.round((cur / tgt) * 100))
   const expected = Math.round((tgt / 30) * new Date().getDate())
   const onTrack  = cur >= expected * 0.9
   const done     = cur >= tgt
-  const color    = done ? 'var(--green)' : onTrack ? 'var(--blue)' : 'var(--yellow)'
+  const trackColor = done ? 'var(--green)' : onTrack ? (botColor ?? 'var(--blue)') : 'var(--yellow)'
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 3,
-      padding: '4px 10px',
-      background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10,
+      padding: '4px 8px',
+      background: 'var(--bg3)', border: `1px solid ${botColor ? botColor + '33' : 'var(--border)'}`, borderRadius: 10,
+      minWidth: 70,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-        <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Monat</span>
-        <span style={{ fontSize: 11, fontWeight: 800, color }}>
-          {done ? '🎉' : onTrack ? '✓' : '⚠'} {cur.toLocaleString('de-DE')}/{tgt.toLocaleString('de-DE')}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {label && <span style={{ fontSize: 9, color: botColor ?? 'var(--text3)', fontWeight: 700 }}>{label}</span>}
+        <span style={{ fontSize: 10, fontWeight: 800, color: trackColor }}>
+          {done ? '🎉' : onTrack ? '✓' : '⚠'} {cur}/{tgt}
         </span>
       </div>
       <div style={{ background: 'var(--border)', borderRadius: 999, height: 3 }}>
-        <div style={{ background: color, borderRadius: 999, height: 3, width: `${pct}%`, transition: 'width 0.4s' }} />
+        <div style={{ background: trackColor, borderRadius: 999, height: 3, width: `${pct}%`, transition: 'width 0.4s' }} />
       </div>
     </div>
   )

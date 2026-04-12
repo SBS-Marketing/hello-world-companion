@@ -44,12 +44,14 @@ const statusLabel: Record<BotStatus, string> = {
   offline: 'Offline',
 }
 
+interface BotMonthly { bot: { id: string; label: string; color: string }; cur: number; tgt: number }
+
 interface Props {
   stats?: Stats
-  monthlyTotal?: number
+  botMonthly?: BotMonthly[]
 }
 
-export function BotOverviewPage({ stats, monthlyTotal }: Props) {
+export function BotOverviewPage({ stats, botMonthly }: Props) {
   const [data, setData] = useState<BotOverviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState<Record<string, boolean>>({})
@@ -87,16 +89,14 @@ export function BotOverviewPage({ stats, monthlyTotal }: Props) {
     return <CenteredText>Bot-Übersicht nicht erreichbar</CenteredText>
   }
 
-  // Monthly: use summed total from App if available, otherwise fall back to single-bot stats
-  const monthlyCur = monthlyTotal ?? stats?.monthly_messages ?? null
-  const monthlyTgt = stats?.monthly_target ?? null
-
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 16px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Monthly Progress ─────────────────────────────────────────────────── */}
-      {monthlyCur != null && monthlyTgt != null && (
-        <MonthlyCard cur={monthlyCur} tgt={monthlyTgt} />
+      {/* ── Monthly Progress — one card per bot ──────────────────────────────── */}
+      {botMonthly && botMonthly.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${botMonthly.length}, 1fr)`, gap: 12 }}>
+          {botMonthly.map(m => <MonthlyCard key={m.bot.id} bot={m.bot} cur={m.cur} tgt={m.tgt} />)}
+        </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
@@ -226,7 +226,7 @@ function formatDateTime(value: string | null) {
   return date.toLocaleString('de-DE')
 }
 
-function MonthlyCard({ cur, tgt }: { cur: number; tgt: number }) {
+function MonthlyCard({ cur, tgt, bot }: { cur: number; tgt: number; bot?: { label: string; color: string } }) {
   const today      = new Date().getDate()
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
   const remaining  = daysInMonth - today
@@ -235,7 +235,8 @@ function MonthlyCard({ cur, tgt }: { cur: number; tgt: number }) {
   const dailyNeeded = remaining > 0 ? Math.ceil((tgt - cur) / remaining) : 0
   const onTrack    = cur >= expected * 0.9
   const done       = cur >= tgt
-  const color      = done ? '#22c55e' : onTrack ? '#3b82f6' : '#f59e0b'
+  const accentColor = bot?.color ?? '#3b82f6'
+  const color      = done ? '#22c55e' : onTrack ? accentColor : '#f59e0b'
   const deficit    = expected - cur
 
   return (
@@ -244,6 +245,11 @@ function MonthlyCard({ cur, tgt }: { cur: number; tgt: number }) {
       borderRadius: 16, padding: '16px 20px',
       display: 'flex', flexDirection: 'column', gap: 12,
     }}>
+      {bot && (
+        <div style={{ fontSize: 12, fontWeight: 700, color: bot.color, letterSpacing: '0.04em' }}>
+          {bot.label}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
