@@ -124,6 +124,8 @@ export default function App() {
             stats={overviewStats ?? undefined}
             botMonthly={botMonthly}
             apiUrl={botUrls['chb']}
+            botUrls={botUrls}
+            botLogs={Object.fromEntries(BOTS.map(b => [b.id, botStates[b.id].logs]))}
           />
         </PageSlot>
 

@@ -1,9 +1,99 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import type { Stats } from '../types'
+
+// ─── Startup-Feedback-Popup ───────────────────────────────────────────────────
+const STARTUP_STEPS = [
+  { key: 'start',    icon: '▶',  label: 'Bot gestartet'    },
+  { key: 'browser',  icon: '🌐', label: 'Browser öffnet'   },
+  { key: 'login',    icon: '🔐', label: 'Einloggen'        },
+  { key: 'active',   icon: '✅', label: 'Aktiv'            },
+]
+
+function detectStep(logs: string[]): number {
+  const last20 = logs.slice(-20).join(' ').toLowerCase()
+  if (last20.includes('scan_new_messages') || last20.includes('aktiv') || last20.includes('gestartet')) return 3
+  if (last20.includes('login') || last20.includes('anmeld') || last20.includes('passwort')) return 2
+  if (last20.includes('browser') || last20.includes('playwright') || last20.includes('chromium')) return 1
+  return 0
+}
+
+function StartupPopup({ botId, meta, logs, onClose }: {
+  botId: string
+  meta: { color: string; icon: string; label: string }
+  logs: string[]
+  onClose: () => void
+}) {
+  const step = detectStep(logs)
+  const recentLogs = logs.slice(-5)
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 80, right: 16, zIndex: 1000,
+      background: '#0d1220', border: `1px solid ${meta.color}55`,
+      borderRadius: 16, padding: '14px 16px', width: 300,
+      boxShadow: '0 8px 32px #00000066',
+      animation: 'slideUp 0.2s ease-out',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontWeight: 700, fontSize: 13, color: meta.color }}>
+          {meta.icon} {meta.label} startet…
+        </span>
+        <button onClick={onClose} style={{
+          background: 'none', border: 'none', color: 'var(--text3)',
+          cursor: 'pointer', fontSize: 16, padding: '0 4px', lineHeight: 1,
+        }}>×</button>
+      </div>
+
+      {/* Steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+        {STARTUP_STEPS.map((s, i) => {
+          const done = i < step
+          const active = i === step
+          return (
+            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: done ? meta.color + '33' : active ? meta.color + '22' : 'var(--bg3)',
+                border: `1px solid ${done ? meta.color : active ? meta.color + '88' : 'var(--border)'}`,
+                fontSize: 11,
+              }}>
+                {done ? '✓' : active ? (
+                  <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: 10 }}>⟳</span>
+                ) : s.icon}
+              </div>
+              <span style={{
+                fontSize: 12,
+                color: done ? meta.color : active ? 'var(--text)' : 'var(--text3)',
+                fontWeight: active ? 700 : 400,
+              }}>{s.label}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Live logs */}
+      {recentLogs.length > 0 && (
+        <div style={{
+          background: 'var(--bg)', borderRadius: 8, padding: '8px 10px',
+          fontFamily: 'monospace', fontSize: 10, color: 'var(--text3)',
+          maxHeight: 80, overflowY: 'auto',
+        }}>
+          {recentLogs.map((l, i) => (
+            <div key={i} style={{ color: l.toLowerCase().includes('error') || l.toLowerCase().includes('fehler') ? '#ef4444' : 'var(--text3)' }}>
+              {l.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} \[.*?\] [\w.]+: /, '')}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const DEFAULT_API = 'https://chb.sbs-marketing.de'
 
 type BotStatus = 'online' | 'offline' | 'idle'
+type AgentRunState = 'running' | 'stopped'
 
 interface BotOverview {
   id: string
@@ -44,19 +134,42 @@ const statusLabel: Record<BotStatus, string> = {
   offline: 'Offline',
 }
 
+const BOT_META: Record<string, { color: string; icon: string; label: string }> = {
+  sa:  { color: '#f472b6', icon: '💋', label: 'SexyAffair' },
+  fpc: { color: '#a78bfa', icon: '🎯', label: 'FPC' },
+  chb: { color: '#60a5fa', icon: '🏠', label: 'ChatHomeBase' },
+}
+
 interface BotMonthly { bot: { id: string; label: string; color: string }; cur: number; tgt: number }
 
 interface Props {
   stats?: Stats
   botMonthly?: BotMonthly[]
   apiUrl?: string
+  botUrls?: Record<string, string>
+  botLogs?: Record<string, { message: string; level: string; ts: string }[]>
 }
 
-export function BotOverviewPage({ stats, botMonthly, apiUrl }: Props) {
+export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLogs = {} }: Props) {
   const API = apiUrl || DEFAULT_API
   const [data, setData] = useState<BotOverviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState<Record<string, boolean>>({})
+  const [agentStatus, setAgentStatus] = useState<Record<string, AgentRunState>>({})
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
+  const [notausStep, setNotausStep] = useState<0 | 1>(0)
+  const [startingBot, setStartingBot] = useState<string | null>(null)
+
+  const getBotUrl = (botId: string) =>
+    botUrls[botId] || `https://${botId}.sbs-marketing.de`
+
+  const refreshAgentStatus = useCallback(async () => {
+    try {
+      const r = await fetch(`${API}/agent/status`)
+      const d = await r.json()
+      setAgentStatus(d)
+    } catch {}
+  }, [API])
 
   const handleReset = async (botId: string) => {
     setResetting(prev => ({ ...prev, [botId]: true }))
@@ -67,26 +180,57 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl }: Props) {
     }
   }
 
+  const handleAgent = async (botId: string, action: 'start' | 'stop') => {
+    const url = getBotUrl(botId)
+    setActionLoading(prev => ({ ...prev, [botId]: true }))
+    if (action === 'start') {
+      setStartingBot(botId)
+    } else {
+      setStartingBot(null)
+    }
+    try {
+      await fetch(`${url}/agent/${action}/${botId}`, { method: 'POST' })
+      await refreshAgentStatus()
+    } finally {
+      setActionLoading(prev => ({ ...prev, [botId]: false }))
+    }
+  }
+
+  const handleNotaus = async () => {
+    if (notausStep === 0) {
+      setNotausStep(1)
+      // Auto-reset after 4s if not confirmed
+      setTimeout(() => setNotausStep(0), 4000)
+      return
+    }
+    // Step 2: stop all running agents
+    setNotausStep(0)
+    const running = Object.entries(agentStatus).filter(([, s]) => s === 'running').map(([id]) => id)
+    await Promise.all(running.map(id => {
+      const url = getBotUrl(id)
+      return fetch(`${url}/agent/stop/${id}`, { method: 'POST' }).catch(() => {})
+    }))
+    await refreshAgentStatus()
+  }
+
   useEffect(() => {
     const load = () => {
       fetch(`${API}/bots/overview`)
         .then(r => r.json())
-        .then(d => {
-          setData(d)
-          setLoading(false)
-        })
+        .then(d => { setData(d); setLoading(false) })
         .catch(() => setLoading(false))
     }
-
     load()
-    const iv = setInterval(load, 10000)
+    refreshAgentStatus()
+    const iv = setInterval(() => { load(); refreshAgentStatus() }, 10000)
     return () => clearInterval(iv)
-  }, [])
+  }, [refreshAgentStatus])
+
+  const anyRunning = Object.values(agentStatus).some(s => s === 'running')
 
   if (loading && !data) {
     return <CenteredText>Lade Bot-Übersicht…</CenteredText>
   }
-
   if (!data) {
     return <CenteredText>Bot-Übersicht nicht erreichbar</CenteredText>
   }
@@ -94,7 +238,77 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl }: Props) {
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 16px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Monthly Progress — one card per bot ──────────────────────────────── */}
+      {/* ── Notaus + Quick controls ──────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
+
+        {/* Per-bot start/stop row */}
+        <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+          {['sa', 'fpc', 'chb'].map(botId => {
+            const meta = BOT_META[botId]
+            const running = agentStatus[botId] === 'running'
+            const busy = actionLoading[botId]
+            return (
+              <button
+                key={botId}
+                onClick={() => handleAgent(botId, running ? 'stop' : 'start')}
+                disabled={busy}
+                style={{
+                  flex: 1,
+                  background: running ? meta.color + '18' : 'var(--bg2)',
+                  border: `1px solid ${running ? meta.color + '55' : 'var(--border)'}`,
+                  borderRadius: 12, padding: '10px 8px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  cursor: busy ? 'wait' : 'pointer', fontFamily: 'inherit',
+                  opacity: busy ? 0.5 : 1, transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: running ? meta.color : 'var(--text3)',
+                    boxShadow: running ? `0 0 5px ${meta.color}` : 'none',
+                  }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: running ? meta.color : 'var(--text3)' }}>
+                    {meta.icon} {meta.label}
+                  </span>
+                </div>
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: running ? '#ef4444' : meta.color,
+                }}>
+                  {busy ? '…' : running ? '⏹ Stop' : '▶ Start'}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Notaus */}
+        <button
+          onClick={handleNotaus}
+          disabled={!anyRunning && notausStep === 0}
+          style={{
+            minWidth: 80,
+            background: notausStep === 1 ? '#7f1d1d' : anyRunning ? '#1f1215' : 'var(--bg2)',
+            border: `2px solid ${notausStep === 1 ? '#ef4444' : anyRunning ? '#ef444466' : 'var(--border)'}`,
+            borderRadius: 12, padding: '10px 14px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+            cursor: anyRunning ? 'pointer' : 'default',
+            fontFamily: 'inherit', transition: 'all 0.15s',
+            animation: notausStep === 1 ? 'pulse-notaus 0.5s ease-in-out infinite alternate' : 'none',
+          }}
+        >
+          <span style={{ fontSize: 20 }}>🛑</span>
+          <span style={{
+            fontSize: 11, fontWeight: 800,
+            color: notausStep === 1 ? '#ef4444' : anyRunning ? '#fca5a5' : 'var(--text3)',
+          }}>
+            {notausStep === 1 ? 'Sicher?' : 'Notaus'}
+          </span>
+        </button>
+      </div>
+
+      {/* ── Monthly Progress ─────────────────────────────────────────────────── */}
       {botMonthly && botMonthly.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${botMonthly.length}, 1fr)`, gap: 12 }}>
           {botMonthly.map(m => <MonthlyCard key={m.bot.id} bot={m.bot} cur={m.cur} tgt={m.tgt} />)}
@@ -109,6 +323,16 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl }: Props) {
         <Kpi label="Aktive Cases" value={String(data.summary.active_conversations)} color="#f59e0b" />
         <Kpi label="Pending" value={String(data.summary.pending)} color="#fbbf24" />
       </div>
+
+      {/* ── Startup Popup ────────────────────────────────────────────────────── */}
+      {startingBot && BOT_META[startingBot] && (
+        <StartupPopup
+          botId={startingBot}
+          meta={BOT_META[startingBot]}
+          logs={(botLogs[startingBot] || []).map(l => l.message)}
+          onClose={() => setStartingBot(null)}
+        />
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
         {data.bots.map(bot => (
@@ -272,9 +496,7 @@ function MonthlyCard({ cur, tgt, bot }: { cur: number; tgt: number; bot?: { labe
         </div>
       </div>
 
-      {/* Progress bar */}
       <div style={{ position: 'relative', background: '#1a2030', borderRadius: 999, height: 8 }}>
-        {/* Expected marker */}
         <div style={{
           position: 'absolute', left: `${Math.min(100, Math.round((expected / tgt) * 100))}%`,
           top: -4, bottom: -4, width: 2, background: '#334155', borderRadius: 1,
