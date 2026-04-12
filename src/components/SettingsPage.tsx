@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BOTS, getBotUrl, setBotUrl } from '../config/bots'
 
 const API = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
 
@@ -156,6 +157,9 @@ export function SettingsPage() {
         )}
       </Section>
 
+      {/* Backend URLs */}
+      <BackendUrlsSection />
+
       {/* Speichern */}
       <button onClick={save} style={{
         background: saved ? '#166534' : '#1d4ed8',
@@ -180,6 +184,55 @@ function lengthLabel(v: number) {
 
 const sliderStyle: React.CSSProperties = {
   width: '100%', accentColor: '#3b82f6', cursor: 'pointer',
+}
+
+// ─── Backend URL Config ───────────────────────────────────────────────────────
+function BackendUrlsSection() {
+  const [urls, setUrls] = useState<Record<string, string>>(
+    () => Object.fromEntries(BOTS.map(b => [b.id, getBotUrl(b)]))
+  )
+  const [saved, setSaved] = useState(false)
+
+  const save = () => {
+    BOTS.forEach(b => { if (urls[b.id]) setBotUrl(b, urls[b.id].trim()) })
+    window.dispatchEvent(new Event('botUrlsUpdated'))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <Section title="🔌 Backend-Verbindungen">
+      {BOTS.map(bot => (
+        <div key={bot.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: bot.color, fontWeight: 700 }}>
+            {bot.icon} {bot.label}
+          </label>
+          <input
+            type="text"
+            value={urls[bot.id]}
+            onChange={e => { setUrls(prev => ({ ...prev, [bot.id]: e.target.value })); setSaved(false) }}
+            placeholder={bot.defaultUrl}
+            style={{
+              background: 'var(--bg3)', border: '1px solid var(--border)',
+              borderRadius: 8, color: 'var(--text)', padding: '8px 12px',
+              fontSize: 12, outline: 'none', fontFamily: 'monospace', width: '100%',
+            }}
+          />
+        </div>
+      ))}
+      <button onClick={save} style={{
+        background: saved ? '#166534' : '#1d4ed8',
+        color: '#fff', border: 'none', borderRadius: 8,
+        padding: '9px 0', fontSize: 13, fontWeight: 700,
+        cursor: 'pointer', transition: 'background 0.2s', fontFamily: 'inherit',
+      }}>
+        {saved ? '✅ URLs gespeichert' : '💾 URLs speichern'}
+      </button>
+      <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+        Änderungen werden sofort aktiv – WebSocket wird neu verbunden.
+      </div>
+    </Section>
+  )
 }
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
