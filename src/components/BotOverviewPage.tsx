@@ -176,7 +176,7 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
   const handleReset = async (botId: string) => {
     setResetting(prev => ({ ...prev, [botId]: true }))
     try {
-      await fetch(`${API}/agent-reset/${botId}`, { method: 'POST' })
+      await fetch(`${getBotUrl(botId)}/agent-reset/${botId}`, { method: 'POST' })
     } finally {
       setTimeout(() => setResetting(prev => ({ ...prev, [botId]: false })), 2000)
     }
