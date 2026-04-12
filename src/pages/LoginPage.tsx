@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 
+const toEmail = (username: string) => `${username.toLowerCase().trim()}@agent.local`
+
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -15,17 +17,26 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
 
+    const email = toEmail(username)
+
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { display_name: username.trim() },
+        },
       })
       if (error) setError(error.message)
-      else setMessage('Bestätigungsmail wurde gesendet. Bitte überprüfe dein Postfach.')
+      else setMessage('Konto erstellt! Du wirst eingeloggt…')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setError(error.message)
+      if (error) {
+        setError(error.message === 'Invalid login credentials'
+          ? 'Benutzername oder Passwort falsch'
+          : error.message)
+      }
     }
     setLoading(false)
   }
@@ -47,12 +58,16 @@ export default function LoginPage() {
         </p>
 
         <input
-          type="email" required placeholder="E-Mail"
-          value={email} onChange={e => setEmail(e.target.value)}
+          type="text" required placeholder="Benutzername"
+          autoComplete="username"
+          value={username} onChange={e => setUsername(e.target.value)}
+          pattern="[a-zA-Z0-9_]{3,30}"
+          title="3–30 Zeichen, nur Buchstaben, Zahlen und Unterstriche"
           style={inputStyle}
         />
         <input
           type="password" required placeholder="Passwort" minLength={6}
+          autoComplete={isSignUp ? 'new-password' : 'current-password'}
           value={password} onChange={e => setPassword(e.target.value)}
           style={inputStyle}
         />
