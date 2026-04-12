@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      login_logs: {
+        Row: {
+          id: string
+          logged_in_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          id?: string
+          logged_in_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          id?: string
+          logged_in_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
