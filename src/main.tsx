@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { supabase } from "./integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { ThemeProvider } from "./hooks/useTheme";
 import App from "./App.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import "./index.css";
@@ -32,7 +33,11 @@ function Root() {
   }, []);
 
   if (loading) return null;
-  return session ? <App /> : <LoginPage />;
+  return session ? (
+    <ThemeProvider><App /></ThemeProvider>
+  ) : (
+    <ThemeProvider><LoginPage /></ThemeProvider>
+  );
 }
 
 createRoot(document.getElementById("root")!).render(

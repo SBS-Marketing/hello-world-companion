@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTheme } from './hooks/useTheme'
 import { BOTS, getBotUrl } from './config/bots'
 import { useBotConnection } from './hooks/useBotConnection'
 import { BotChatsPanel } from './components/BotChatsPanel'
@@ -12,6 +13,7 @@ type Page = 'overview' | 'chats' | 'feed' | 'stats' | 'settings'
 // ─── Top-level multi-bot state ─────────────────────────────────────────────────
 // Each bot connects independently; this component just wires them together.
 export default function App() {
+  const { theme, toggle: toggleTheme } = useTheme()
   const [page,       setPage]       = useState<Page>('overview')
   const [activeBotId, setActiveBotId] = useState<string>(BOTS[0].id)
   const [filter,     setFilter]     = useState<'pending' | 'all'>('pending')
@@ -109,6 +111,15 @@ export default function App() {
             <MonthlyChip key={m.bot.id} cur={m.cur} tgt={m.tgt} label={m.bot.id.toUpperCase()} color={m.bot.color} />
           ))}
         </div>
+
+        {/* Theme toggle */}
+        <button onClick={toggleTheme} title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} style={{
+          background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8,
+          width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', fontSize: 15, transition: 'all 0.2s',
+        }}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
 
         <StatChip
           label="Pending"
