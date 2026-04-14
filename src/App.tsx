@@ -13,6 +13,7 @@ type Page = 'overview' | 'chats' | 'feed' | 'stats' | 'settings'
 // ─── Top-level multi-bot state ─────────────────────────────────────────────────
 // Each bot connects independently; this component just wires them together.
 export default function App() {
+  const { theme, toggle: toggleTheme } = useTheme()
   const [page,       setPage]       = useState<Page>('overview')
   const [activeBotId, setActiveBotId] = useState<string>(BOTS[0].id)
   const [filter,     setFilter]     = useState<'pending' | 'all'>('pending')
