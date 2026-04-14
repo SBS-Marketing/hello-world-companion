@@ -295,11 +295,11 @@ function BackendUrlsSection() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{
-      background: '#0f1623', border: '1px solid #1a2335',
+      background: 'var(--card)', border: '1px solid var(--card-border)',
       borderRadius: 12, padding: '16px 18px',
       display: 'flex', flexDirection: 'column', gap: 14,
     }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', letterSpacing: '0.05em' }}>{title}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.05em' }}>{title}</div>
       {children}
     </div>
   )
