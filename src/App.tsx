@@ -68,9 +68,9 @@ export default function App() {
     }}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header style={{
+      <header className="glass" style={{
         flexShrink: 0,
-        background: 'var(--bg2)', borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
         padding: '10px 14px',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
@@ -88,10 +88,10 @@ export default function App() {
                 background: 'var(--bg3)', borderRadius: 20, padding: '2px 7px',
                 border: `1px solid ${st.connected ? b.color + '44' : 'var(--border)'}`,
               }}>
-                <div style={{
-                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                <div className={st.connected ? 'dot-pulse' : ''} style={{
+                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
                   background: st.connected ? b.color : 'var(--text3)',
-                  boxShadow: st.connected ? `0 0 4px ${b.color}` : 'none',
+                  boxShadow: st.connected ? `0 0 6px ${b.color}` : 'none',
                 }} />
                 <span style={{ fontSize: 9, color: st.connected ? b.color : 'var(--text3)', fontWeight: 700 }}>
                   {b.id.toUpperCase()}
@@ -103,10 +103,12 @@ export default function App() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Per-bot monthly chips */}
-        {botMonthly.map(m => (
-          <MonthlyChip key={m.bot.id} cur={m.cur} tgt={m.tgt} label={m.bot.id.toUpperCase()} color={m.bot.color} />
-        ))}
+        {/* Per-bot monthly chips — hidden on mobile */}
+        <div className="header-chips" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {botMonthly.map(m => (
+            <MonthlyChip key={m.bot.id} cur={m.cur} tgt={m.tgt} label={m.bot.id.toUpperCase()} color={m.bot.color} />
+          ))}
+        </div>
 
         <StatChip
           label="Pending"
@@ -261,9 +263,9 @@ export default function App() {
       </div>
 
       {/* ── Bottom Navigation ────────────────────────────────────────────────── */}
-      <nav style={{
+      <nav className="glass" style={{
         flexShrink: 0,
-        background: 'var(--bg2)', borderTop: '1px solid var(--border)',
+        borderTop: '1px solid var(--border)',
         display: 'flex',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
@@ -274,12 +276,12 @@ export default function App() {
           badge={totalPending || undefined}
         />
         <NavTab
-          icon="📡" label="Live Feed" active={page === 'feed'}
+          icon="📡" label="Feed" active={page === 'feed'}
           onClick={() => handleFeedOpen()}
           badge={totalErrors > 0 ? totalErrors : undefined} badgeRed
         />
-        <NavTab icon="📊" label="Statistik" active={page === 'stats'} onClick={() => setPage('stats')} />
-        <NavTab icon="⚙️" label="Einstellungen" active={page === 'settings'} onClick={() => setPage('settings')} />
+        <NavTab icon="📊" label="Stats" active={page === 'stats'} onClick={() => setPage('stats')} />
+        <NavTab icon="⚙️" label="Settings" active={page === 'settings'} onClick={() => setPage('settings')} />
       </nav>
     </div>
   )
