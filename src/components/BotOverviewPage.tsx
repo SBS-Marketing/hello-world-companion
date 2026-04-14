@@ -317,12 +317,12 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
 
       {/* ── Monthly Progress ─────────────────────────────────────────────────── */}
       {botMonthly && botMonthly.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${botMonthly.length}, 1fr)`, gap: 12 }}>
+        <div className="monthly-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${botMonthly.length}, 1fr)`, gap: 12 }}>
           {botMonthly.map(m => <MonthlyCard key={m.bot.id} bot={m.bot} cur={m.cur} tgt={m.tgt} />)}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
         <Kpi label="Bots online" value={`${data.summary.online}/${data.summary.total}`} color="#22c55e" />
         <Kpi label="Fehler 10m" value={String(data.summary.errors_10m)} color={data.summary.errors_10m > 0 ? '#ef4444' : '#93c5fd'} />
         <Kpi label="Gesendet 10m" value={String(data.summary.sent_10m)} color="#a78bfa" />
@@ -359,7 +359,7 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
         />
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
+      <div className="bot-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
         {data.bots.map(bot => (
           <div key={bot.id} style={{
             background: '#0f1623', border: '1px solid #1a2335', borderRadius: 16,
