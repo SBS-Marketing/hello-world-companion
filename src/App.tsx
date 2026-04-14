@@ -112,6 +112,15 @@ export default function App() {
           ))}
         </div>
 
+        {/* Theme toggle */}
+        <button onClick={toggleTheme} title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} style={{
+          background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8,
+          width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', fontSize: 15, transition: 'all 0.2s',
+        }}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+
         <StatChip
           label="Pending"
           value={totalPending}
