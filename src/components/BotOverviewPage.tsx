@@ -516,7 +516,7 @@ function MonthlyCard({ cur, tgt, bot }: { cur: number; tgt: number; bot?: { labe
           {bot.label}
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+      <div className="stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
             Monatsziel {new Date().toLocaleString('de-DE', { month: 'long' })}
