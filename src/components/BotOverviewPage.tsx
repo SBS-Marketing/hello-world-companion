@@ -317,12 +317,12 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
 
       {/* ── Monthly Progress ─────────────────────────────────────────────────── */}
       {botMonthly && botMonthly.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${botMonthly.length}, 1fr)`, gap: 12 }}>
+        <div className="monthly-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${botMonthly.length}, 1fr)`, gap: 12 }}>
           {botMonthly.map(m => <MonthlyCard key={m.bot.id} bot={m.bot} cur={m.cur} tgt={m.tgt} />)}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
         <Kpi label="Bots online" value={`${data.summary.online}/${data.summary.total}`} color="#22c55e" />
         <Kpi label="Fehler 10m" value={String(data.summary.errors_10m)} color={data.summary.errors_10m > 0 ? '#ef4444' : '#93c5fd'} />
         <Kpi label="Gesendet 10m" value={String(data.summary.sent_10m)} color="#a78bfa" />
@@ -359,7 +359,7 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
         />
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
+      <div className="bot-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
         {data.bots.map(bot => (
           <div key={bot.id} style={{
             background: '#0f1623', border: '1px solid #1a2335', borderRadius: 16,
@@ -458,7 +458,13 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
 
 function Kpi({ label, value, color = '#e5eefb' }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ background: '#0f1623', border: '1px solid #1a2335', borderRadius: 14, padding: '14px 16px' }}>
+    <div style={{
+      background: '#0f1623', border: '1px solid #1a2335', borderRadius: 14, padding: '14px 16px',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = color + '44'; e.currentTarget.style.boxShadow = `0 0 16px ${color}11` }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a2335'; e.currentTarget.style.boxShadow = 'none' }}
+    >
       <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
     </div>
@@ -516,7 +522,7 @@ function MonthlyCard({ cur, tgt, bot }: { cur: number; tgt: number; bot?: { labe
           {bot.label}
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+      <div className="stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
             Monatsziel {new Date().toLocaleString('de-DE', { month: 'long' })}

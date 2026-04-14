@@ -68,9 +68,9 @@ export default function App() {
     }}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header style={{
+      <header className="glass" style={{
         flexShrink: 0,
-        background: 'var(--bg2)', borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
         padding: '10px 14px',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
@@ -88,10 +88,10 @@ export default function App() {
                 background: 'var(--bg3)', borderRadius: 20, padding: '2px 7px',
                 border: `1px solid ${st.connected ? b.color + '44' : 'var(--border)'}`,
               }}>
-                <div style={{
-                  width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                <div className={st.connected ? 'dot-pulse' : ''} style={{
+                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
                   background: st.connected ? b.color : 'var(--text3)',
-                  boxShadow: st.connected ? `0 0 4px ${b.color}` : 'none',
+                  boxShadow: st.connected ? `0 0 6px ${b.color}` : 'none',
                 }} />
                 <span style={{ fontSize: 9, color: st.connected ? b.color : 'var(--text3)', fontWeight: 700 }}>
                   {b.id.toUpperCase()}
@@ -103,10 +103,12 @@ export default function App() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Per-bot monthly chips */}
-        {botMonthly.map(m => (
-          <MonthlyChip key={m.bot.id} cur={m.cur} tgt={m.tgt} label={m.bot.id.toUpperCase()} color={m.bot.color} />
-        ))}
+        {/* Per-bot monthly chips — hidden on mobile */}
+        <div className="header-chips" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {botMonthly.map(m => (
+            <MonthlyChip key={m.bot.id} cur={m.cur} tgt={m.tgt} label={m.bot.id.toUpperCase()} color={m.bot.color} />
+          ))}
+        </div>
 
         <StatChip
           label="Pending"
@@ -261,9 +263,9 @@ export default function App() {
       </div>
 
       {/* ── Bottom Navigation ────────────────────────────────────────────────── */}
-      <nav style={{
+      <nav className="glass" style={{
         flexShrink: 0,
-        background: 'var(--bg2)', borderTop: '1px solid var(--border)',
+        borderTop: '1px solid var(--border)',
         display: 'flex',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
@@ -274,12 +276,12 @@ export default function App() {
           badge={totalPending || undefined}
         />
         <NavTab
-          icon="📡" label="Live Feed" active={page === 'feed'}
+          icon="📡" label="Feed" active={page === 'feed'}
           onClick={() => handleFeedOpen()}
           badge={totalErrors > 0 ? totalErrors : undefined} badgeRed
         />
-        <NavTab icon="📊" label="Statistik" active={page === 'stats'} onClick={() => setPage('stats')} />
-        <NavTab icon="⚙️" label="Einstellungen" active={page === 'settings'} onClick={() => setPage('settings')} />
+        <NavTab icon="📊" label="Stats" active={page === 'stats'} onClick={() => setPage('stats')} />
+        <NavTab icon="⚙️" label="Settings" active={page === 'settings'} onClick={() => setPage('settings')} />
       </nav>
     </div>
   )
@@ -303,17 +305,19 @@ function NavTab({ icon, label, active, onClick, badge, badgeRed }: {
     <button onClick={onClick} style={{
       flex: 1, border: 'none', background: 'transparent',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '10px 4px 8px', cursor: 'pointer', position: 'relative',
+      padding: '12px 4px 10px', cursor: 'pointer', position: 'relative',
       color: active ? 'var(--blue)' : 'var(--text3)',
-      fontFamily: 'inherit', transition: 'color 0.15s', gap: 3,
+      fontFamily: 'inherit', transition: 'color 0.2s', gap: 3,
+      minHeight: 56,
     }}>
       {badge != null && badge > 0 && (
         <span style={{
-          position: 'absolute', top: 6, right: '50%', transform: 'translateX(12px)',
+          position: 'absolute', top: 6, right: '50%', transform: 'translateX(14px)',
           background: badgeRed ? 'var(--red)' : 'var(--yellow)',
           color: badgeRed ? '#fff' : '#0a0c14',
           borderRadius: 999, fontSize: 9, fontWeight: 800,
           padding: '1px 5px', minWidth: 16, textAlign: 'center', lineHeight: '14px',
+          boxShadow: `0 0 8px ${badgeRed ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.4)'}`,
         }}>
           {badge > 99 ? '99+' : badge}
         </span>
@@ -322,8 +326,9 @@ function NavTab({ icon, label, active, onClick, badge, badgeRed }: {
       <span style={{ fontSize: 10, fontWeight: active ? 700 : 400, letterSpacing: '0.02em' }}>{label}</span>
       {active && (
         <span style={{
-          position: 'absolute', bottom: 0, left: '20%', right: '20%',
-          height: 2, background: 'var(--blue)', borderRadius: 999,
+          position: 'absolute', bottom: 0, left: '25%', right: '25%',
+          height: 2.5, background: 'var(--blue)', borderRadius: 999,
+          boxShadow: '0 0 8px rgba(59,130,246,0.4)',
         }} />
       )}
     </button>

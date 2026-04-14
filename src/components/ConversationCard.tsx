@@ -260,7 +260,7 @@ export function ConversationCard({
 
             {/* Zwei-Spalten: Original | Humanized */}
             {conv.original_text && conv.humanized_text && conv.original_text !== conv.humanized_text ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div className="conv-compare" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                 {/* Original (Grok) */}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
