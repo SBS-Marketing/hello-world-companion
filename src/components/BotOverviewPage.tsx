@@ -362,16 +362,16 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
       <div className="bot-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
         {data.bots.map(bot => (
           <div key={bot.id} style={{
-            background: '#0f1623', border: '1px solid #1a2335', borderRadius: 16,
-            padding: 16, boxShadow: '0 6px 24px #00000033', display: 'flex', flexDirection: 'column', gap: 14,
+            background: 'var(--card)', border: '1px solid var(--card-border)', borderRadius: 16,
+            padding: 16, boxShadow: '0 6px 24px var(--overlay)', display: 'flex', flexDirection: 'column', gap: 14,
             opacity: bot.status === 'offline' ? 0.38 : 1,
             filter: bot.status === 'offline' ? 'grayscale(0.6)' : 'none',
             transition: 'opacity 0.3s',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#e5eefb' }}>{bot.name}</div>
-                <div style={{ fontSize: 11, color: '#4b5563', marginTop: 4 }}>ID: {bot.id}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{bot.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>ID: {bot.id}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
