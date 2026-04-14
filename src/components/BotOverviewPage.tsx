@@ -458,7 +458,13 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
 
 function Kpi({ label, value, color = '#e5eefb' }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ background: '#0f1623', border: '1px solid #1a2335', borderRadius: 14, padding: '14px 16px' }}>
+    <div style={{
+      background: '#0f1623', border: '1px solid #1a2335', borderRadius: 14, padding: '14px 16px',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = color + '44'; e.currentTarget.style.boxShadow = `0 0 16px ${color}11` }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a2335'; e.currentTarget.style.boxShadow = 'none' }}
+    >
       <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
     </div>
