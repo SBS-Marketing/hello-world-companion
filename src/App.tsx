@@ -305,17 +305,19 @@ function NavTab({ icon, label, active, onClick, badge, badgeRed }: {
     <button onClick={onClick} style={{
       flex: 1, border: 'none', background: 'transparent',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      padding: '10px 4px 8px', cursor: 'pointer', position: 'relative',
+      padding: '12px 4px 10px', cursor: 'pointer', position: 'relative',
       color: active ? 'var(--blue)' : 'var(--text3)',
-      fontFamily: 'inherit', transition: 'color 0.15s', gap: 3,
+      fontFamily: 'inherit', transition: 'color 0.2s', gap: 3,
+      minHeight: 56,
     }}>
       {badge != null && badge > 0 && (
         <span style={{
-          position: 'absolute', top: 6, right: '50%', transform: 'translateX(12px)',
+          position: 'absolute', top: 6, right: '50%', transform: 'translateX(14px)',
           background: badgeRed ? 'var(--red)' : 'var(--yellow)',
           color: badgeRed ? '#fff' : '#0a0c14',
           borderRadius: 999, fontSize: 9, fontWeight: 800,
           padding: '1px 5px', minWidth: 16, textAlign: 'center', lineHeight: '14px',
+          boxShadow: `0 0 8px ${badgeRed ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.4)'}`,
         }}>
           {badge > 99 ? '99+' : badge}
         </span>
@@ -324,8 +326,9 @@ function NavTab({ icon, label, active, onClick, badge, badgeRed }: {
       <span style={{ fontSize: 10, fontWeight: active ? 700 : 400, letterSpacing: '0.02em' }}>{label}</span>
       {active && (
         <span style={{
-          position: 'absolute', bottom: 0, left: '20%', right: '20%',
-          height: 2, background: 'var(--blue)', borderRadius: 999,
+          position: 'absolute', bottom: 0, left: '25%', right: '25%',
+          height: 2.5, background: 'var(--blue)', borderRadius: 999,
+          boxShadow: '0 0 8px rgba(59,130,246,0.4)',
         }} />
       )}
     </button>
