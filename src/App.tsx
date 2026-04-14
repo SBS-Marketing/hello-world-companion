@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTheme } from './hooks/useTheme'
 import { BOTS, getBotUrl } from './config/bots'
 import { useBotConnection } from './hooks/useBotConnection'
 import { BotChatsPanel } from './components/BotChatsPanel'
