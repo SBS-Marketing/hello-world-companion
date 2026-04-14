@@ -456,32 +456,32 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
   )
 }
 
-function Kpi({ label, value, color = '#e5eefb' }: { label: string; value: string; color?: string }) {
+function Kpi({ label, value, color = 'var(--text)' }: { label: string; value: string; color?: string }) {
   return (
     <div style={{
-      background: '#0f1623', border: '1px solid #1a2335', borderRadius: 14, padding: '14px 16px',
+      background: 'var(--card)', border: '1px solid var(--card-border)', borderRadius: 14, padding: '14px 16px',
       transition: 'border-color 0.2s, box-shadow 0.2s',
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color + '44'; e.currentTarget.style.boxShadow = `0 0 16px ${color}11` }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a2335'; e.currentTarget.style.boxShadow = 'none' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = ''; e.currentTarget.style.boxShadow = 'none' }}
     >
-      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
     </div>
   )
 }
 
-function MiniStat({ label, value, color = '#e5eefb' }: { label: string; value: string; color?: string }) {
+function MiniStat({ label, value, color = 'var(--text)' }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ background: '#0b1320', border: '1px solid #182234', borderRadius: 12, padding: '10px 12px' }}>
-      <div style={{ fontSize: 10, color: '#64748b', marginBottom: 6 }}>{label}</div>
+    <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px' }}>
+      <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 16, fontWeight: 700, color }}>{value}</div>
     </div>
   )
 }
 
 function CenteredText({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', justifyContent: 'center', padding: 60, color: '#64748b' }}>{children}</div>
+  return <div style={{ display: 'flex', justifyContent: 'center', padding: 60, color: 'var(--text3)' }}>{children}</div>
 }
 
 function formatTime(value: string | null) {
