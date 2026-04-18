@@ -161,6 +161,8 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
   const [startingBot, setStartingBot] = useState<string | null>(null)
   const [notausConfirmed, setNotausConfirmed] = useState(false)
   const [reloadingBot, setReloadingBot] = useState<string | null>(null)
+  const [fpcAccount, setFpcAccount] = useState<string | null>(null)
+  const [fpcSwitching, setFpcSwitching] = useState(false)
 
   const getBotUrl = (botId: string) =>
     botUrls[botId] || `https://${botId}.sbs-marketing.de`
@@ -238,6 +240,25 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
     const iv = setInterval(() => { load(); refreshAgentStatus() }, 10000)
     return () => clearInterval(iv)
   }, [refreshAgentStatus])
+
+  useEffect(() => {
+    const fpcUrl = getBotUrl('fpc')
+    fetch(`${fpcUrl}/fpc/account`)
+      .then(r => r.json())
+      .then(d => setFpcAccount(d.account ?? null))
+      .catch(() => {})
+  }, [])
+
+  const handleFpcSwitch = async (account: string) => {
+    if (fpcSwitching || account === fpcAccount) return
+    setFpcSwitching(true)
+    const fpcUrl = getBotUrl('fpc')
+    try {
+      await fetch(`${fpcUrl}/fpc/switch/${account}`, { method: 'POST' })
+      setFpcAccount(account)
+    } catch {}
+    setTimeout(() => setFpcSwitching(false), 4000)
+  }
 
   const anyRunning = Object.values(agentStatus).some(s => s === 'running')
 
@@ -321,6 +342,41 @@ export function BotOverviewPage({ stats, botMonthly, apiUrl, botUrls = {}, botLo
           {botMonthly.map(m => <MonthlyCard key={m.bot.id} bot={m.bot} cur={m.cur} tgt={m.tgt} />)}
         </div>
       )}
+
+      {/* ── FPC Zugang Switcher ──────────────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--card)', border: '1px solid var(--card-border)', borderRadius: 14,
+        padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 700, letterSpacing: '0.06em' }}>FPC ZUGANG</span>
+        {['jannik', 'marvin'].map(acct => {
+          const isActive = acct === fpcAccount
+          return (
+            <button
+              key={acct}
+              onClick={() => handleFpcSwitch(acct)}
+              disabled={fpcSwitching}
+              style={{
+                padding: '6px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                cursor: fpcSwitching ? 'wait' : isActive ? 'default' : 'pointer',
+                border: `1px solid ${isActive ? '#1e5a9c' : 'var(--border)'}`,
+                background: isActive ? '#1e3a5f' : 'var(--bg3)',
+                color: isActive ? '#93c5fd' : 'var(--text3)',
+                transition: 'all .15s', fontFamily: 'inherit',
+              }}
+            >
+              {isActive && fpcSwitching ? '⏳' : acct.charAt(0).toUpperCase() + acct.slice(1)}
+            </button>
+          )
+        })}
+        <span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 4 }}>
+          {fpcSwitching
+            ? 'Wechselt…'
+            : fpcAccount
+              ? `Aktiv: ${fpcAccount.charAt(0).toUpperCase() + fpcAccount.slice(1)}`
+              : ''}
+        </span>
+      </div>
 
       <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 12 }}>
         <Kpi label="Bots online" value={`${data.summary.online}/${data.summary.total}`} color="#22c55e" />
