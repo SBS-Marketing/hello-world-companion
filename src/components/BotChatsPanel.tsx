@@ -144,3 +144,35 @@ export function BotChatsPanel({ bot, state, filter }: Props) {
     </div>
   )
 }
+
+function SubTab({ active, color, onClick, children }: {
+  active: boolean; color: string; onClick: () => void; children: React.ReactNode
+}) {
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      background: active ? color + '22' : 'var(--bg3)',
+      color: active ? color : 'var(--text2)',
+      border: `1px solid ${active ? color + '55' : 'var(--border)'}`,
+      borderRadius: 999,
+      padding: '5px 12px',
+      fontSize: 12, fontWeight: active ? 700 : 500,
+      cursor: 'pointer', fontFamily: 'inherit',
+      whiteSpace: 'nowrap',
+      transition: 'all 0.15s',
+    }}>
+      {children}
+    </button>
+  )
+}
+
+function Badge({ n }: { n: number }) {
+  if (!n) return null
+  return (
+    <span style={{
+      background: 'var(--yellow)', color: '#0a0c14',
+      borderRadius: 999, fontSize: 10, fontWeight: 800,
+      padding: '1px 6px', minWidth: 16, textAlign: 'center',
+    }}>{n}</span>
+  )
+}
