@@ -335,6 +335,24 @@ export function ConversationCard({
               </div>
             )}
 
+            {/* Fit-Score Badge */}
+            {conv.fit_score != null && (() => {
+              const fc = conv.fit_score >= 7 ? '#22c55e' : conv.fit_score >= 4 ? '#f59e0b' : '#ef4444'
+              return (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: fc + '18', border: `1px solid ${fc}66`,
+                  borderRadius: 8, padding: '5px 10px', marginBottom: 10,
+                  fontSize: 11, color: fc, fontWeight: 700,
+                }}>
+                  <span>🎯 {conv.fit_score}/10</span>
+                  {conv.fit_reason && (
+                    <span style={{ color: fc + 'cc', fontWeight: 500 }}>– {conv.fit_reason}</span>
+                  )}
+                </div>
+              )
+            })()}
+
             {/* Finale Antwort (editierbar) */}
             <div style={{ fontSize: 10, color: '#3b82f6', fontWeight: 700, letterSpacing: '0.07em', marginBottom: 6 }}>
               📤 WIRD GESENDET
