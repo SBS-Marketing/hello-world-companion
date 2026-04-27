@@ -21,6 +21,8 @@ export interface Conversation {
   humanized_text?: string | null
   original_score?: number | null
   humanized_score?: number | null
+  fit_score?: number | null
+  fit_reason?: string | null
 }
 
 export interface Milestone {
