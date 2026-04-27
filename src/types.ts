@@ -23,6 +23,7 @@ export interface Conversation {
   humanized_score?: number | null
   fit_score?: number | null
   fit_reason?: string | null
+  agent?: string | null
 }
 
 export interface Milestone {

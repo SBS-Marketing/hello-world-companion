@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import type { BotConfig } from '../config/bots'
 import type { BotState } from '../hooks/useBotConnection'
 import { ConversationCard } from './ConversationCard'
@@ -8,12 +9,40 @@ interface Props {
   filter: 'pending' | 'all'
 }
 
+// Sub-agents per bot (e.g. FPC has Marvin & Jannik personas)
+const SUB_AGENTS: Record<string, { id: string; label: string; icon: string }[]> = {
+  fpc: [
+    { id: 'fpc_marvin', label: 'Marvin', icon: '🧔' },
+    { id: 'fpc_jannik', label: 'Jannik', icon: '🧑' },
+  ],
+}
+
 export function BotChatsPanel({ bot, state, filter }: Props) {
   const { conversations, connected, pendingCount, approve, edit, reject, countdowns } = state
 
-  const filtered = filter === 'pending'
+  const subAgents = SUB_AGENTS[bot.id]
+  const [subAgent, setSubAgent] = useState<string>('all') // 'all' | sub-agent id
+
+  const baseFiltered = filter === 'pending'
     ? conversations.filter(c => c.status === 'pending' || c.status === 'typed')
     : conversations
+
+  const filtered = useMemo(() => {
+    if (!subAgents || subAgent === 'all') return baseFiltered
+    return baseFiltered.filter(c => c.agent === subAgent)
+  }, [baseFiltered, subAgents, subAgent])
+
+  // Per-sub-agent pending counts (for tab badges)
+  const subPending = useMemo(() => {
+    if (!subAgents) return {}
+    const counts: Record<string, number> = {}
+    for (const sa of subAgents) {
+      counts[sa.id] = conversations.filter(c =>
+        c.agent === sa.id && (c.status === 'pending' || c.status === 'typed')
+      ).length
+    }
+    return counts
+  }, [conversations, subAgents])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
