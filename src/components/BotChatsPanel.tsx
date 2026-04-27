@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import type { BotConfig } from '../config/bots'
 import type { BotState } from '../hooks/useBotConnection'
 import { ConversationCard } from './ConversationCard'
@@ -8,12 +9,40 @@ interface Props {
   filter: 'pending' | 'all'
 }
 
+// Sub-agents per bot (e.g. FPC has Marvin & Jannik personas)
+const SUB_AGENTS: Record<string, { id: string; label: string; icon: string }[]> = {
+  fpc: [
+    { id: 'fpc_marvin', label: 'Marvin', icon: '🧔' },
+    { id: 'fpc_jannik', label: 'Jannik', icon: '🧑' },
+  ],
+}
+
 export function BotChatsPanel({ bot, state, filter }: Props) {
   const { conversations, connected, pendingCount, approve, edit, reject, countdowns } = state
 
-  const filtered = filter === 'pending'
+  const subAgents = SUB_AGENTS[bot.id]
+  const [subAgent, setSubAgent] = useState<string>('all') // 'all' | sub-agent id
+
+  const baseFiltered = filter === 'pending'
     ? conversations.filter(c => c.status === 'pending' || c.status === 'typed')
     : conversations
+
+  const filtered = useMemo(() => {
+    if (!subAgents || subAgent === 'all') return baseFiltered
+    return baseFiltered.filter(c => c.agent === subAgent)
+  }, [baseFiltered, subAgents, subAgent])
+
+  // Per-sub-agent pending counts (for tab badges)
+  const subPending = useMemo(() => {
+    if (!subAgents) return {}
+    const counts: Record<string, number> = {}
+    for (const sa of subAgents) {
+      counts[sa.id] = conversations.filter(c =>
+        c.agent === sa.id && (c.status === 'pending' || c.status === 'typed')
+      ).length
+    }
+    return counts
+  }, [conversations, subAgents])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -54,6 +83,30 @@ export function BotChatsPanel({ bot, state, filter }: Props) {
         )}
       </div>
 
+      {/* Sub-agent tabs (e.g. Marvin / Jannik for FPC) */}
+      {subAgents && (
+        <div style={{
+          flexShrink: 0,
+          display: 'flex', gap: 6,
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg2)',
+          overflowX: 'auto',
+        }}>
+          <SubTab active={subAgent === 'all'} color={bot.color} onClick={() => setSubAgent('all')}>
+            Alle
+            <Badge n={Object.values(subPending).reduce((a, b) => a + b, 0)} />
+          </SubTab>
+          {subAgents.map(sa => (
+            <SubTab key={sa.id} active={subAgent === sa.id} color={bot.color} onClick={() => setSubAgent(sa.id)}>
+              <span>{sa.icon}</span>
+              <span>{sa.label}</span>
+              <Badge n={subPending[sa.id] ?? 0} />
+            </SubTab>
+          ))}
+        </div>
+      )}
+
       {/* Chat List */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px 20px' }}>
         {filtered.length === 0 ? (
@@ -89,5 +142,37 @@ export function BotChatsPanel({ bot, state, filter }: Props) {
         )}
       </div>
     </div>
+  )
+}
+
+function SubTab({ active, color, onClick, children }: {
+  active: boolean; color: string; onClick: () => void; children: React.ReactNode
+}) {
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      background: active ? color + '22' : 'var(--bg3)',
+      color: active ? color : 'var(--text2)',
+      border: `1px solid ${active ? color + '55' : 'var(--border)'}`,
+      borderRadius: 999,
+      padding: '5px 12px',
+      fontSize: 12, fontWeight: active ? 700 : 500,
+      cursor: 'pointer', fontFamily: 'inherit',
+      whiteSpace: 'nowrap',
+      transition: 'all 0.15s',
+    }}>
+      {children}
+    </button>
+  )
+}
+
+function Badge({ n }: { n: number }) {
+  if (!n) return null
+  return (
+    <span style={{
+      background: 'var(--yellow)', color: '#0a0c14',
+      borderRadius: 999, fontSize: 10, fontWeight: 800,
+      padding: '1px 6px', minWidth: 16, textAlign: 'center',
+    }}>{n}</span>
   )
 }
