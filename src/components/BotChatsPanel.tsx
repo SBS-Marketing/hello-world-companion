@@ -83,6 +83,30 @@ export function BotChatsPanel({ bot, state, filter }: Props) {
         )}
       </div>
 
+      {/* Sub-agent tabs (e.g. Marvin / Jannik for FPC) */}
+      {subAgents && (
+        <div style={{
+          flexShrink: 0,
+          display: 'flex', gap: 6,
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg2)',
+          overflowX: 'auto',
+        }}>
+          <SubTab active={subAgent === 'all'} color={bot.color} onClick={() => setSubAgent('all')}>
+            Alle
+            <Badge n={Object.values(subPending).reduce((a, b) => a + b, 0)} />
+          </SubTab>
+          {subAgents.map(sa => (
+            <SubTab key={sa.id} active={subAgent === sa.id} color={bot.color} onClick={() => setSubAgent(sa.id)}>
+              <span>{sa.icon}</span>
+              <span>{sa.label}</span>
+              <Badge n={subPending[sa.id] ?? 0} />
+            </SubTab>
+          ))}
+        </div>
+      )}
+
       {/* Chat List */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px 20px' }}>
         {filtered.length === 0 ? (
